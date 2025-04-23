@@ -1,0 +1,23 @@
+// const bcrypt = require("bcryptjs");
+
+// async function thing() {
+//   const salt = await bcrypt.genSalt(10);
+//   password = await bcrypt.hash("thebrightone", salt);
+
+//   console.log('thepassword', password);
+// }
+
+// thing()
+
+// deleteAllDocuments();
+
+// async function deleteAllDocuments() {
+//   try {
+//     const result = await Call.deleteMany({});
+//     console.log(`${result.deletedCount} documents were deleted.`);
+//   } catch (error) {
+//     console.error('Error deleting documents:', error);
+//   } finally {
+//     mongoose.connection.close();
+//   }
+// };
