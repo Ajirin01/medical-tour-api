@@ -5,8 +5,10 @@ const { protect, authorize } = require("../middlewares/authMiddleware");
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+const apiKey = process.env.STRIPE_SECRET_KEY
+
 // Add a console.log to check if the API key is set
-console.log("Stripe API Key set:", !!apiKey);
+console.log("Stripe API Key set:", !apiKey);
 
 router.post("/create-payment-intent", async (req, res) => {
   const { amount } = req.body;
