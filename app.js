@@ -70,21 +70,32 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use("/api", routes);
-app.use("/api/medical-file", require("./routes/medicalFileRoutes"));
+app.use("/", routes);
+app.use("/medical-file", require("./routes/medicalFileRoutes"));
 
 // Update the static file middleware
 // Static files for images
 app.use(
   "/uploads",
   (req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
-    res.header("Access-Control-Allow-Credentials", "true");
+    const allowedOrigins = [
+      "http://localhost:3000",
+      "http://sozodigicare.com",
+      "https://sozodigicare.com",
+      "http://www.sozodigicare.com",
+      "https://www.sozodigicare.com"
+    ];
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+      res.header("Access-Control-Allow-Origin", origin);
+      res.header("Access-Control-Allow-Credentials", "true");
+    }
     res.header("Cross-Origin-Resource-Policy", "cross-origin");
     next();
   },
   express.static(path.join(__dirname, "uploads"))
 );
+
 
 
 //just to test
