@@ -7,7 +7,11 @@ const Specialist = User.discriminator(
     {
       licenseNumber: { type: String, required: false },
       category: { type: String, required: false },
-      isApproved: { type: Boolean, default: false },
+      approvalStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+      },
       practicingLicense: { type: String },
       // Consultant-like fields
       specialty: { type: String },

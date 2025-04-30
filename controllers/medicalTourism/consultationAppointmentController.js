@@ -1,7 +1,7 @@
 // const GeneralController = require('./GeneralController');
 const ConsultationAppointment = require('../../models/medicalTourism/ConsultationAppointment');
 const Invoice = require('../../models/medicalTourism/Invoice');
-const User = require('../../models/User');
+const UserModel = require('../../models/medicalTourism/User');
 const GeneralController = require('./GeneralController')
 
 class ConsultationAppointmentController extends GeneralController {
@@ -80,49 +80,53 @@ class ConsultationAppointmentController extends GeneralController {
 
     async createCustom(req, res) {
         try {
-            const { patient, consultant, date, type } = req.body;
-
-            // Validate consultant exists and is not a patient
-            const consultantUser = await User.findById(consultant);
-            if (!consultantUser || consultantUser.role === 'patient') {
-                return res.status(400).json({ message: "Invalid consultant." });
-            }
-
-            // Ensure patient does not have another pending/confirmed appointment with the same consultant
-            const existingAppointment = await ConsultationAppointment.findOne({
-                patient,
-                consultant,
-                date: { 
-                    $gte: new Date(date).setHours(0, 0, 0, 0), 
-                    $lte: new Date(date).setHours(23, 59, 59, 999) 
-                },
-                status: { $in: ['pending', 'confirmed'] }
+          const { patient, consultant, date, type } = req.body;
+      
+          // Validate consultant exists and is not a patient
+          const consultantUser = await UserModel.findById(consultant);
+          if (!consultantUser || consultantUser.role === 'patient') {
+            return res.status(400).json({ message: "Invalid consultant." });
+          }
+      
+          // Check for existing appointment (same patient, consultant, date, and pending/confirmed)
+          const existingAppointment = await ConsultationAppointment.findOne({
+            patient,
+            consultant,
+            date: {
+              $gte: new Date(date).setHours(0, 0, 0, 0),
+              $lte: new Date(date).setHours(23, 59, 59, 999)
+            },
+            status: { $in: ['pending', 'confirmed'] }
+          });
+      
+          if (existingAppointment) {
+            return res.status(200).json({
+              message: "Appointment already exists",
+              appointment: existingAppointment
             });
-
-            if (existingAppointment) {
-                return res.status(400).json({ message: "You already have a pending or confirmed appointment on this date." });
-            }
-
-            // Create appointment using generalized logic
-            const newAppointment = await ConsultationAppointment.create(req.body);
-
-            // Create invoice
-            const newInvoice = await Invoice.create({
-                user: patient,
-                purpose: "Consultation",
-                amount: 100,
-                status: "pending"
-            });
-
-            res.status(201).json({ 
-                message: "Appointment booked successfully", 
-                appointment: newAppointment, 
-                invoice: newInvoice 
-            });
+          }
+      
+          // Create new appointment
+          const newAppointment = await ConsultationAppointment.create(req.body);
+      
+        //   // Create invoice
+        //   const newInvoice = await Invoice.create({
+        //     user: patient,
+        //     purpose: "Consultation",
+        //     amount: 100,
+        //     status: "pending"
+        //   });
+      
+          res.status(201).json({
+            message: "Appointment booked successfully",
+            appointment: newAppointment,
+            invoice: newInvoice
+          });
         } catch (error) {
-            res.status(500).json({ message: error.message });
+          res.status(500).json({ message: error.message });
         }
-    }
+      }
+      
 
     async updateCustom(req, res) {
         try {

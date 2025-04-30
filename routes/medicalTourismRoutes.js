@@ -49,10 +49,10 @@ routeGroup('/booking', BookingController, [
 // 📌 Consultation Routes (Specialist & Consultant Access)
 routeGroup('/consultation-appointments', ConsultationAppointmentController, [
     ['get', '/get/all/simple', [], ConsultationAppointmentController.getAllSimple],
-    ['post', '/create/custom', [protect, authorize(['admin', 'specialist', 'consultant'])], ConsultationAppointmentController.createCustom],
-    ['put', '/update/custom', [protect, authorize(['admin', 'specialist', 'consultant'])], ConsultationAppointmentController.updateCustom],
-    ['get', '/all/paginated', [protect, authorize(['admin', 'specialist', 'consultant'])], ConsultationAppointmentController.getPaginatedWithUsers],
-    ['get', '/get/custom/:id', [protect, authorize(['admin', 'specialist', 'consultant'])], ConsultationAppointmentController.getOneWithUsers]
+    ['post', '/create/custom', [protect, authorize(['admin', 'specialist', 'consultant', 'user'])], ConsultationAppointmentController.createCustom],
+    ['put', '/update/custom/:id', [protect, authorize(['admin', 'specialist', 'consultant', 'user'])], ConsultationAppointmentController.updateCustom],
+    ['get', '/all/paginated', [protect, authorize(['user', 'admin', 'specialist', 'consultant'])], ConsultationAppointmentController.getPaginatedWithUsers],
+    ['get', '/get/custom/:id', [protect, authorize(['user', 'admin', 'specialist', 'consultant'])], ConsultationAppointmentController.getOneWithUsers]
 ]);
 routeGroup('/consultation-documents', ConsultationDocumentationController, [
     ['post', '/create/custom', [protect, authorize(['admin', 'specialist', 'consultant']), upload.single('document')], ConsultationDocumentationController.createCustom],
@@ -145,8 +145,8 @@ routeGroup('/orders', OrderController, [
 
 // 📌 Payments (All Users Can Initiate, Admin Can Verify)
 routeGroup('/payments', PaymentController, [
-    ['post', '/initiate', [protect, authorize(['user', 'specialist', 'consultant'])], PaymentController.initiatePayment],
-    ['get', '/verify/:reference', [protect, authorize(['admin'])], PaymentController.verifyPayment],
+    ['post', '/initiate', [protect, authorize(['user', 'specialist', 'admin', 'consultant'])], PaymentController.initiatePayment],
+    ['get', '/verify/custom', [protect], PaymentController.verifyPayment],
 ]);
 
 // 📌 Hospitals & Services (Admin Only)
@@ -190,7 +190,7 @@ routeGroup('/categories', CategoryController, [
 // 📌 User Routes (Admin Only + Public Access Where Applicable)
 routeGroup('/users', UserController, [
     // Admin-only route to get all users (no pagination)
-    ['get', '/get-all/no-pagination', [protect, authorize(['admin'])], UserController.getAllUsers],
+    ['get', '/get-all/no-pagination', [protect], UserController.getAllUsers],
   
     // Public routes
     ['post', '/register', [], UserController.register],
@@ -207,8 +207,10 @@ routeGroup('/users', UserController, [
       ], UserController.completeProfile],
       
     // Authenticated user routes
-    ['patch', '/update/:id', [protect], UserController.updateUserInfo],
-    ['get', '/delete/by', [], UserController.deleteUser]
+    ['put', '/update/:id', [protect], UserController.updateUserInfo],
+    ['get', '/delete/by', [], UserController.deleteUser],
+    ['put', '/:id/status', [protect, authorize(['admin'])], UserController.updateSpecialistApproval]
+    
 ]);
   
 

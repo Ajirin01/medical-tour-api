@@ -13,11 +13,11 @@ const paymentSchema = new Schema({
   },
   currency: {
     type: String,
-    default: 'NGN', // Change as needed
+    default: 'USD', // Change as needed
   },
   status: {
     type: String,
-    enum: ['pending', 'successful', 'failed', 'cancelled'],
+    enum: ['pending', 'paid', 'successful', 'failed', 'cancelled'],
     default: 'pending',
   },
   reference: {
