@@ -86,6 +86,29 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("session-ended", ({ specialist }) => {
+    if (!specialist || !specialist._id) return;
+  
+    const existing = onlineSpecialists.get(specialist._id);
+  
+    if (existing) {
+      // Already online, just make sure socketId is added
+      existing.socketIds.add(socket.id);
+    } else {
+      // Add back to online list
+      onlineSpecialists.set(specialist._id, {
+        data: specialist,
+        socketIds: new Set([socket.id]),
+      });
+    }
+  
+    console.log(`🔁 Session ended. Specialist ${specialist.firstName} is now available again`);
+  
+    // Emit updated online list
+    io.emit("update-specialists", Array.from(onlineSpecialists.values()).map(v => v.data));
+  });
+  
+
   // When a patient wants to get the current list
   socket.on("get-online-specialists", () => {
     socket.emit("update-specialists", Array.from(onlineSpecialists.values()).map(v => v.data));

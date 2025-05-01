@@ -140,17 +140,17 @@ class ConsultationAppointmentController extends GeneralController {
             }
 
             // If updating to completed, check if invoice is paid
-            if (status === 'completed') {
-                const invoice = await Invoice.findOne({ 
-                    user: appointment.patient, 
-                    purpose: "Consultation", 
-                    status: "paid" 
-                });
+            // if (status === 'completed') {
+            //     // const invoice = await Invoice.findOne({ 
+            //     //     user: appointment.patient, 
+            //     //     purpose: "Consultation", 
+            //     //     status: "paid" 
+            //     // });
 
-                if (!invoice) {
-                    return res.status(400).json({ message: "Cannot complete appointment until payment is made." });
-                }
-            }
+            //     if (!invoice) {
+            //         return res.status(400).json({ message: "Cannot complete appointment until payment is made." });
+            //     }
+            // }
 
             // Update using generalized method
             const updatedAppointment = await ConsultationAppointment.findByIdAndUpdate(id, req.body, { new: true });
