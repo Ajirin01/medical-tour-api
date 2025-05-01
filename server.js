@@ -11,13 +11,7 @@ connectDB();
 const PORT = process.env.PORT || 5000;
 
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "https://sozodigicare.com",
-    methods: ["GET", "POST"],
-    credentials: true,
-  }
-});
+const io = socket.init(server);
 
 // Track online specialists: { specialistId => { data, socketIds: Set } }
 const onlineSpecialists = new Map();
