@@ -5,9 +5,7 @@ let io;
 module.exports.init = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "https://sozodigicare.com",
-      methods: ["GET", "POST"],
-      credentials: true,
+      origin: "*"
     },
   });
 
