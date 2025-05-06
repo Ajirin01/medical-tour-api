@@ -26,20 +26,58 @@ const { UserController } = require('../controllers/medicalTourism/userController
 const { ShippingAddressController } = require('../controllers/medicalTourism/shippingAddressController');
 const { HealthQuestionnaireController } = require('../controllers/medicalTourism/healthQuestionnaireController');
 const { AvailabilityController } = require('../controllers/medicalTourism/availabilityController');
+const { PushNotificationController } = require('../controllers/medicalTourism/pushNotificationController');
+const { VideoSessionController } = require('../controllers/medicalTourism/videoSessionController');
+
 
 const routeGroup = (prefix, controller, extraRoutes = []) => {
     const commonRoutes = [
-        ['get', '/', [], controller.getAll],
-        ['get', '/:id', [], controller.getOne],
-        ['post', '/', [protect, authorize(['admin', 'specialist', 'consultant', 'pharmacyAdmin', 'labAdmin'])], controller.create],
-        ['put', '/:id', [protect, authorize(['admin', 'specialist', 'consultant', 'pharmacyAdmin', 'labAdmin'])], controller.update],
-        ['delete', '/:id', [protect, authorize(['admin', 'specialist', 'consultant', 'pharmacyAdmin', 'labAdmin'])], controller.delete],
+      {
+        method: 'get',
+        path: '/',
+        handlerName: 'getAll',
+        middlewares: [],
+      },
+      {
+        method: 'get',
+        path: '/:id',
+        handlerName: 'getOne',
+        middlewares: [],
+      },
+      {
+        method: 'post',
+        path: '/',
+        handlerName: 'create',
+        middlewares: [protect, authorize(['admin', 'specialist', 'consultant', 'pharmacyAdmin', 'labAdmin'])],
+      },
+      {
+        method: 'put',
+        path: '/:id',
+        handlerName: 'update',
+        middlewares: [protect, authorize(['admin', 'specialist', 'consultant', 'pharmacyAdmin', 'labAdmin'])],
+      },
+      {
+        method: 'delete',
+        path: '/:id',
+        handlerName: 'delete',
+        middlewares: [protect, authorize(['admin', 'specialist', 'consultant', 'pharmacyAdmin', 'labAdmin'])],
+      },
     ];
-
-    [...commonRoutes, ...extraRoutes].forEach(([method, path, middlewares, handler]) => {
+  
+    // Register only if the method exists on the controller
+    commonRoutes.forEach(({ method, path, handlerName, middlewares }) => {
+      const handler = controller[handlerName];
+      if (typeof handler === 'function') {
         router[method](`${prefix}${path}`, ...middlewares, handler);
+      }
     });
-};
+  
+    // Register extraRoutes
+    extraRoutes.forEach(([method, path, middlewares, handler]) => {
+      router[method](`${prefix}${path}`, ...middlewares, handler);
+    });
+  };
+  
 
 // 📌 Booking Routes (User & Specialist can book, Admin can manage)
 routeGroup('/booking', BookingController, [
@@ -248,6 +286,41 @@ routeGroup('/availabilities', AvailabilityController, [
     // Get all availability slots for a specific user
     ['get', '/user/:userId', [protect], AvailabilityController.getByUser],
     ['get', '/slots/by', [protect], AvailabilityController.getByRole]
+  ]);
+
+routeGroup('/push-notifications', PushNotificationController, [
+    // Subscribe to notifications
+    ['post', '/subscribe', [protect], PushNotificationController.subscribe],
+    
+    // Send push notifications
+    ['post', '/send', [], PushNotificationController.sendNotification],
+    
+    // Get all notifications
+    ['get', '/all', [protect], PushNotificationController.getAllNotifications],
+    
+    // Get a specific notification by ID
+    ['get', '/:id', [protect], PushNotificationController.getOneNotification],
+]);
+
+routeGroup('/video-sessions', VideoSessionController, [
+    // Create a session (after payment)
+    ['post', '/', [protect, authorize(['admin', 'consultant', 'specialist'])], VideoSessionController.createSession],
+  
+    ['get', '/:id', [protect], VideoSessionController.getSessionById],
+
+    ['put', '/:id', [protect], VideoSessionController.updateSession],
+
+    ['get', '/by-appointment/:appointmentId', [protect], VideoSessionController.getSessionByAppointment],
+
+    ['get', '/by-user/:userId', [protect], VideoSessionController.getUserSessions]
+  ]);
+  
+  routeGroup('/session-feedback', VideoSessionController, [
+    // Add feedback for a session
+    ['post', '/', [protect, authorize(['user'])], VideoSessionController.addFeedback],
+  
+    // Get feedback by session ID
+    ['get', '/:sessionId', [protect, authorize(['admin'])], VideoSessionController.getFeedbackBySession],
   ]);
 
 module.exports = router;

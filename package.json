@@ -36,6 +36,8 @@
     "nodemailer": "^6.10.1",
     "socket.io": "^4.7.5",
     "stripe": "^16.2.0",
+    "uuid": "^11.1.0",
+    "web-push": "^3.6.7",
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {

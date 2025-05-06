@@ -1,9 +1,20 @@
 const { Server } = require("socket.io");
+const webpush = require("web-push");
+
+webpush.setVapidDetails(
+    "mailto:mubarakolagoke@gmail.com",
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+  
 
 const onlineSpecialists = new Map();
 const specialistsInCall = new Set();
 const appointmentToCallSession = new Map();
 const callTimeouts = new Map();
+
+// Temporary in-memory store (replace with database in production)
+const pushSubscriptions = new Map(); // key = userId, value = subscription object
 
 function setupConsultationSocket(io) {
   io.on("connection", (socket) => {
@@ -43,12 +54,30 @@ function setupConsultationSocket(io) {
 
       if (specialist) {
         specialist.socketIds.forEach(sockId => {
-          io.to(sockId).socketsJoin(room); // All of specialist’s sockets join room
+          io.to(sockId).socketsJoin(room);
           io.to(sockId).emit("incoming-call", { appointmentId });
         });
-
+      
         console.log(`📞 Invited specialist ${specialistId} to appointment ${appointmentId}`);
-
+      
+        // ✅ Send web push notification here
+        const pushSub = pushSubscriptions.get(specialistId);
+        if (pushSub) {
+          const notificationPayload = JSON.stringify({
+            title: "Incoming Consultation Call",
+            body: "You have an incoming call for a consultation appointment.",
+            icon: "/icons/notification-icon.png", // Customize if needed
+            data: {
+              appointmentId,
+              url: `/consultation/${appointmentId}`
+            }
+          });
+      
+          webpush.sendNotification(pushSub, notificationPayload).catch(error => {
+            console.error("Web push error:", error.message);
+          });
+        }
+      
         const timeoutId = setTimeout(() => {
           console.log(`⌛ Call to specialist ${specialistId} for appointment ${appointmentId} timed out`);
           specialistsInCall.delete(specialistId);
@@ -56,9 +85,9 @@ function setupConsultationSocket(io) {
           callTimeouts.delete(appointmentId);
           io.to(room).emit("call-timeout", { appointmentId, specialistId });
         }, 30_000);
-
+      
         callTimeouts.set(appointmentId, timeoutId);
-      } else {
+      }else {
         appointmentToCallSession.delete(appointmentId);
         specialistsInCall.delete(specialistId);
         socket.emit("specialist-unavailable", { appointmentId, specialistId });
@@ -102,6 +131,11 @@ function setupConsultationSocket(io) {
       console.log(`❌ Specialist ${specialistId} rejected the call`);
     });
 
+    socket.on("session-created", ({ appointmentId, session }) => {
+      console.log("📦 Received session-created for:", appointmentId, session._id);
+      io.to(`appointment_${appointmentId}`).emit("session-created", { appointmentId, session });
+    });
+
     socket.on("session-ended", ({ specialist, appointmentId }) => {
       const room = `appointment_${appointmentId}`;
       if (!specialist || !specialist._id) return;
@@ -117,9 +151,9 @@ function setupConsultationSocket(io) {
       }
 
       specialistsInCall.delete(specialist._id);
-      console.log(`🔁 Session ended. Specialist ${specialist.firstName} is now available again`);
+      console.log(`🔁 Session ${appointmentId} ended. Specialist ${specialist.firstName} is now available again`);
 
-      io.to(room).emit("session-ended");
+      io.emit("session-ended", { specialist, appointmentId });
       io.emit("update-specialists", Array.from(onlineSpecialists.values()).map(v => v.data));
     });
 
