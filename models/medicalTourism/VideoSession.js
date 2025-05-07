@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+const prescriptionSchema = new mongoose.Schema({
+  medication: { type: String, required: true },
+  dosage: { type: String, required: true },
+  frequency: { type: String, required: true },
+}, { _id: false }); // prevent Mongoose from adding _id to each prescription subdoc
+
 const videoSessionSchema = new mongoose.Schema({
   appointment: {
     type: mongoose.Schema.Types.ObjectId,
@@ -13,6 +19,7 @@ const videoSessionSchema = new mongoose.Schema({
   durationInMinutes: { type: Number },
   videoCallUrl: { type: String },
   sessionNotes: { type: String },
+  prescriptions: [prescriptionSchema],
   specialistPaymentStatus: {
     type: String,
     enum: ['unpaid', 'pending', 'paid'],

@@ -40,7 +40,7 @@ class VideoSessionController {
       const updateFields = req.body;
   
       // Validate: only allow updating specific fields
-      const allowedFields = ['startTime', 'endTime', 'durationInMinutes', 'specialistPaymentStatus', 'specialistPaymentDate', 'sessionNotes', 'videoCallUrl'];
+      const allowedFields = ['startTime', 'endTime', 'durationInMinutes', 'specialistPaymentStatus', 'specialistPaymentDate', 'sessionNotes', 'videoCallUrl', 'prescriptions'];
       const sanitizedUpdate = {};
   
       for (const key of allowedFields) {
@@ -127,7 +127,77 @@ class VideoSessionController {
       this.handleError(res, 'Failed to fetch user sessions');
     }
   }
+
+  async getAllPrescriptions(req, res) {
+    try {
+      const sessions = await VideoSession.find({ prescriptions: { $exists: true, $not: { $size: 0 } } })
+        .populate('user specialist appointment')
+        .sort({ createdAt: -1 });
   
+      const prescriptions = sessions.flatMap(session => 
+        session.prescriptions.map(prescription => ({
+          ...prescription.toObject(),
+          sessionId: session._id,
+          createdAt: session.createdAt,
+          user: session.user,
+          specialist: session.specialist,
+          appointment: session.appointment,
+        }))
+      );
+  
+      res.status(200).json({ success: true, prescriptions });
+    } catch (error) {
+      console.error("Error fetching all prescriptions:", error);
+      this.handleError(res, "Failed to fetch prescriptions");
+    }
+  }
+
+  // Get prescriptions by session ID
+  async getPrescriptionsBySession(req, res) {
+    try {
+      const session = await VideoSession.findById(req.params.sessionId);
+      if (!session) return this.handleError(res, 'Session not found', 404);
+      res.status(200).json({ success: true, prescriptions: session.prescriptions });
+    } catch (error) {
+      console.error('Error fetching prescriptions by session:', error);
+      this.handleError(res, 'Failed to fetch prescriptions');
+    }
+  }
+
+  // Get prescriptions by user ID
+  async getPrescriptionsByUser(req, res) {
+    try {
+      const sessions = await VideoSession.find({
+        user: req.params.userId,
+        prescriptions: { $exists: true, $not: { $size: 0 } },
+      })
+        .populate('user specialist appointment')
+        .sort({ createdAt: -1 });
+  
+      res.status(200).json({ success: true, sessions });
+    } catch (error) {
+      console.error('Error fetching prescriptions by user:', error);
+      this.handleError(res, 'Failed to fetch prescriptions');
+    }
+  }
+  
+
+  // Get prescriptions by specialist ID
+  async getPrescriptionsBySpecialist(req, res) {
+    try {
+      const sessions = await VideoSession.find({
+        specialist: req.params.specialistId,
+        prescriptions: { $exists: true, $not: { $size: 0 } },
+      })
+        .populate('user specialist appointment')
+        .sort({ createdAt: -1 });
+  
+      res.status(200).json({ success: true, sessions });
+    } catch (error) {
+      console.error('Error fetching prescriptions by specialist:', error);
+      this.handleError(res, 'Failed to fetch prescriptions');
+    }
+  }
 }
 
 module.exports = { VideoSessionController: new VideoSessionController() };

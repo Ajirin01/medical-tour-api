@@ -240,7 +240,8 @@ routeGroup('/users', UserController, [
         protect,
         upload.fields([
           { name: 'profileImage', maxCount: 1 },
-          { name: 'practicingLicense', maxCount: 1 }
+          { name: 'practicingLicense', maxCount: 1 },
+          { name: 'signature', maxCount: 1 }
         ])
       ], UserController.completeProfile],
       
@@ -312,7 +313,16 @@ routeGroup('/video-sessions', VideoSessionController, [
 
     ['get', '/by-appointment/:appointmentId', [protect], VideoSessionController.getSessionByAppointment],
 
-    ['get', '/by-user/:userId', [protect], VideoSessionController.getUserSessions]
+    ['get', '/by-user/:userId', [protect], VideoSessionController.getUserSessions],
+
+    // Get prescriptions from a session
+    ['get', '/:sessionId/prescriptions', [protect], VideoSessionController.getPrescriptionsBySession],
+
+    // Get prescriptions for a user
+    ['get', '/by-user/:userId/prescriptions', [protect], VideoSessionController.getPrescriptionsByUser],
+
+    // Get prescriptions for a specialist
+    ['get', '/by-specialist/:specialistId/prescriptions', [protect], VideoSessionController.getPrescriptionsBySpecialist],
   ]);
   
   routeGroup('/session-feedback', VideoSessionController, [

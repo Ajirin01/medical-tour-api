@@ -13,6 +13,7 @@ const Specialist = User.discriminator(
         default: 'pending'
       },
       practicingLicense: { type: String },
+      signature: { type: String },
       // Consultant-like fields
       specialty: { type: String },
       bio: { type: String },

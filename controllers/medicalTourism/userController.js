@@ -273,6 +273,7 @@ async resendOtp(req, res) {
         bio,
         experience,
         languages,
+        signature
       } = req.body;
 
       // 4) basic fields
@@ -303,6 +304,7 @@ async resendOtp(req, res) {
       if (req.files) {
         const profileImgFile     = req.files.profileImage?.[0];
         const practicingLicFile  = req.files.practicingLicense?.[0];
+        const signatureFile = req.files.signature[0];
 
         // — profileImage
         if (profileImgFile) {
@@ -324,6 +326,15 @@ async resendOtp(req, res) {
             });
           }
           user.practicingLicense = `/uploads/${practicingLicFile.filename}`;
+        }
+        if (user.role === 'specialist' && signatureFile) {
+          if (user.signature) {
+            const oldSig = path.join(__dirname, '..', '..', 'public', user.signature);
+            fs.unlink(oldSig, (err) => {
+              if (err && err.code !== 'ENOENT') console.error('Deleting old license file:', err);
+            });
+          }
+          user.signature = `/uploads/${signatureFile.filename}`;
         }
       }
 
