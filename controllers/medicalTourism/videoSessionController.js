@@ -198,6 +198,90 @@ class VideoSessionController {
       this.handleError(res, 'Failed to fetch prescriptions');
     }
   }
+
+  async getPaginatedSessions(req, res) {
+    const { page = 1, limit = 10 } = req.query;
+    const role = req.user.role;
+    const userId = req.user.id;
+  
+    let filter = {};
+  
+    if (role === "user") {
+      filter.user = userId;
+    } else if (role === "specialist") {
+      filter.specialist = userId;
+    }
+    // Admins see everything — no filter applied
+  
+    try {
+      const sessions = await VideoSession.find(filter)
+        .populate("user")
+        .populate("specialist")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(Number(limit));
+  
+      const total = await VideoSession.countDocuments(filter);
+  
+      res.json({
+        data: sessions,
+        total,
+        page: Number(page),
+        pages: Math.ceil(total / limit),
+      });
+    } catch (error) {
+      console.error("Error fetching video sessions:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+
+  async getPaginatedFeedbacks(req, res) {
+    const { page = 1, limit = 10, rating, startDate, endDate } = req.query;
+  
+    let filter = {};
+  
+    if (rating) {
+      filter.rating = Number(rating);
+    }
+  
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) {
+        filter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        filter.createdAt.$lte = new Date(endDate);
+      }
+    }
+  
+    try {
+      const feedbacks = await SessionFeedback.find(filter)
+        .populate({
+          path: 'session',
+          populate: [
+            { path: 'user', model: 'UserModel' },
+            { path: 'specialist', model: 'UserModel' },
+            { path: 'appointment' }
+          ]
+        })
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(Number(limit));
+  
+      const total = await SessionFeedback.countDocuments(filter);
+  
+      res.json({
+        data: feedbacks,
+        total,
+        page: Number(page),
+        pages: Math.ceil(total / limit),
+      });
+    } catch (error) {
+      console.error("Error fetching feedbacks:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+  
 }
 
 module.exports = { VideoSessionController: new VideoSessionController() };

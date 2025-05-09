@@ -28,6 +28,8 @@ const { HealthQuestionnaireController } = require('../controllers/medicalTourism
 const { AvailabilityController } = require('../controllers/medicalTourism/availabilityController');
 const { PushNotificationController } = require('../controllers/medicalTourism/pushNotificationController');
 const { VideoSessionController } = require('../controllers/medicalTourism/videoSessionController');
+const { GalleryController } = require('../controllers/medicalTourism/galleryController');
+const { BlogController } = require('../controllers/medicalTourism/blogController');
 
 
 const routeGroup = (prefix, controller, extraRoutes = []) => {
@@ -189,7 +191,8 @@ routeGroup('/payments', PaymentController, [
 
 // 📌 Hospitals & Services (Admin Only)
 routeGroup('/hospitals', HospitalController, [
-    ['post', '/', [protect, authorize(['admin'])], HospitalController.create],
+  ['post', '/custom/create', [protect, authorize(['admin']), upload.single('photo')], HospitalController.createCustom],
+  ['put', '/custom/update/:id', [protect, authorize(['admin']), upload.single('photo')], HospitalController.updateCustom],
 ]);
 routeGroup('/hospital-services', HospitalServiceController, [
     ['post', '/', [protect, authorize(['admin'])], HospitalServiceController.create],
@@ -251,7 +254,6 @@ routeGroup('/users', UserController, [
     ['put', '/:id/status', [protect, authorize(['admin'])], UserController.updateSpecialistApproval]
     
 ]);
-  
 
 // 📌 Shipping Address Routes (User can manage their shipping addresses)
 routeGroup('/shipping-addresses', ShippingAddressController, [
@@ -323,6 +325,8 @@ routeGroup('/video-sessions', VideoSessionController, [
 
     // Get prescriptions for a specialist
     ['get', '/by-specialist/:specialistId/prescriptions', [protect], VideoSessionController.getPrescriptionsBySpecialist],
+  
+    ['get', '/get/all/paginated', [protect], VideoSessionController.getPaginatedSessions],
   ]);
   
   routeGroup('/session-feedback', VideoSessionController, [
@@ -331,6 +335,24 @@ routeGroup('/video-sessions', VideoSessionController, [
   
     // Get feedback by session ID
     ['get', '/:sessionId', [protect, authorize(['admin'])], VideoSessionController.getFeedbackBySession],
+
+    ['get', '/get/all/paginated', [protect], VideoSessionController.getPaginatedFeedbacks],
   ]);
+
+routeGroup('/galleries', GalleryController, [
+  // Override create
+  ['post', '/custom/create', [protect, authorize(['admin']), upload.single('photo')], GalleryController.createCustom],
+
+  // Override update
+  ['put', '/custom/update/:id', [protect, authorize(['admin']), upload.single('photo')], GalleryController.updateCustom],
+]);
+
+routeGroup('/blogs', BlogController, [
+  // Override create
+  ['post', '/custom/create', [protect, authorize(['admin']), upload.single('featuredImage')], BlogController.createCustom],
+
+  // Override update
+  ['put', '/custom/update/:id', [protect, authorize(['admin']), upload.single('featuredImage')], BlogController.updateCustom],
+]);
 
 module.exports = router;
