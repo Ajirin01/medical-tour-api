@@ -484,6 +484,16 @@ async resendOtp(req, res) {
         }
     } 
 
+    async getAllDoctors(req, res) {
+      try {
+        const users = await User.find({ role: 'specialist' });
+        res.status(200).json(users);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ message: "Failed to fetch users" });
+      }
+    }
+    
     async updateSpecialistApproval(req, res) {
         try {
           const { id } = req.params;

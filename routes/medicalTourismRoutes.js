@@ -183,11 +183,13 @@ routeGroup('/orders', OrderController, [
     ['get', '/custom/:id', [protect, authorize(['user', 'admin'])], OrderController.getOrderById],
 ]);
 
-// 📌 Payments (All Users Can Initiate, Admin Can Verify)
+// 📌 Payments (All Users Can Initiate, Admin/Specialist/User Can View Their Payments)
 routeGroup('/payments', PaymentController, [
-    ['post', '/initiate', [protect, authorize(['user', 'specialist', 'admin', 'consultant'])], PaymentController.initiatePayment],
-    ['get', '/verify/custom', [protect], PaymentController.verifyPayment],
+  ['post', '/initiate', [protect, authorize(['user', 'specialist', 'admin', 'consultant'])], PaymentController.initiatePayment],
+  ['get', '/verify/custom', [protect], PaymentController.verifyPayment],
+  ['get', '/all/no-pagination', [protect, authorize(['user', 'specialist', 'admin'])], PaymentController.getPayments],
 ]);
+
 
 // 📌 Hospitals & Services (Admin Only)
 routeGroup('/hospitals', HospitalController, [
@@ -232,6 +234,7 @@ routeGroup('/categories', CategoryController, [
 routeGroup('/users', UserController, [
     // Admin-only route to get all users (no pagination)
     ['get', '/get-all/no-pagination', [protect], UserController.getAllUsers],
+    ['get', '/get-all/doctors/no-pagination', [], UserController.getAllDoctors],
   
     // Public routes
     ['post', '/register', [], UserController.register],
@@ -250,7 +253,7 @@ routeGroup('/users', UserController, [
       
     // Authenticated user routes
     ['put', '/update/:id', [protect], UserController.updateUserInfo],
-    ['get', '/delete/by', [], UserController.deleteUser],
+    ['delete', '/delete/by', [protect, authorize(['admin'])], UserController.deleteUser],
     ['put', '/:id/status', [protect, authorize(['admin'])], UserController.updateSpecialistApproval]
     
 ]);
@@ -315,7 +318,7 @@ routeGroup('/video-sessions', VideoSessionController, [
 
     ['get', '/by-appointment/:appointmentId', [protect], VideoSessionController.getSessionByAppointment],
 
-    ['get', '/by-user/:userId', [protect], VideoSessionController.getUserSessions],
+    ['get', '/by-user/all', [protect], VideoSessionController.getUserSessions],
 
     // Get prescriptions from a session
     ['get', '/:sessionId/prescriptions', [protect], VideoSessionController.getPrescriptionsBySession],
@@ -337,14 +340,17 @@ routeGroup('/video-sessions', VideoSessionController, [
     ['get', '/:sessionId', [protect, authorize(['admin'])], VideoSessionController.getFeedbackBySession],
 
     ['get', '/get/all/paginated', [protect], VideoSessionController.getPaginatedFeedbacks],
+
+    ['get', '/all/no-pagination', [protect], VideoSessionController.getFeedbacksNoPagination],
   ]);
 
 routeGroup('/galleries', GalleryController, [
-  // Override create
   ['post', '/custom/create', [protect, authorize(['admin']), upload.single('photo')], GalleryController.createCustom],
 
-  // Override update
   ['put', '/custom/update/:id', [protect, authorize(['admin']), upload.single('photo')], GalleryController.updateCustom],
+
+  ['get', '/get-all/no-pagination', [], GalleryController.getAllNoPagination],
+
 ]);
 
 routeGroup('/blogs', BlogController, [

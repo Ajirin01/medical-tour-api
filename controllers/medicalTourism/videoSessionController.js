@@ -119,14 +119,37 @@ class VideoSessionController {
 
   async getUserSessions(req, res) {
     try {
-      const sessions = await VideoSession.find({ user: req.params.userId })
-        .populate('specialist appointment');
+      // Determine the role of the user making the request
+      const userRole = req.user.role; // Assuming the user's role is in `req.user.role`
+  
+      let query = {};
+  
+      // If the role is 'admin', allow fetching all sessions
+      if (userRole === 'admin') {
+        query = {}; // No filter, fetch all sessions
+      }
+      // If the role is 'specialist', fetch only sessions where the specialist matches the user's ID
+      else if (userRole === 'specialist') {
+        query = { 'specialist._id': req.user._id }; // Filter by specialist
+      }
+      // If the role is 'user', fetch only sessions where the user matches the userId in the route
+      else if (userRole === 'user') {
+        query = { user: req.user._id }; // Filter by userId
+      } else {
+        return res.status(403).json({ success: false, message: "Unauthorized role" });
+      }
+  
+      // Fetch sessions based on the query and populate 'specialist' and 'appointment' fields
+      const sessions = await VideoSession.find(query)
+        .populate('specialist appointment'); // Populate related fields
+  
       res.status(200).json({ success: true, sessions });
     } catch (error) {
       console.error('Get user sessions error:', error);
       this.handleError(res, 'Failed to fetch user sessions');
     }
   }
+  
 
   async getAllPrescriptions(req, res) {
     try {
@@ -180,7 +203,6 @@ class VideoSessionController {
       this.handleError(res, 'Failed to fetch prescriptions');
     }
   }
-  
 
   // Get prescriptions by specialist ID
   async getPrescriptionsBySpecialist(req, res) {
@@ -276,6 +298,17 @@ class VideoSessionController {
         page: Number(page),
         pages: Math.ceil(total / limit),
       });
+    } catch (error) {
+      console.error("Error fetching feedbacks:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+
+  async getFeedbacksNoPagination(req, res) {
+    try {
+      const feedbacks = await SessionFeedback.find()
+  
+      res.json(feedbacks);
     } catch (error) {
       console.error("Error fetching feedbacks:", error);
       res.status(500).json({ message: "Server error" });

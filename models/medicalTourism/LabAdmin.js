@@ -1,10 +1,10 @@
 const User = require("./User");
 
-const LabEmployee = User.discriminator(
-  "labEmployee",
+const LabAdmin = User.discriminator(
+  "labAdmin",
   new mongoose.Schema({
     laboratory: { type: mongoose.Schema.Types.ObjectId, ref: "Laboratory", required: true },
   }, { _id: false })
 );
 
-module.exports = LabEmployee;
+module.exports = LabAdmin;

@@ -75,6 +75,33 @@ class PaymentController extends GeneralController {
       res.status(500).json({ message: 'Payment verification failed', error });
     }
   }
+
+  async getPayments(req, res) {
+    try {
+      const user = req.user;
+  
+      let payments;
+  
+      if (user.role === 'admin') {
+        // Admin: fetch all payments
+        payments = await Payment.find().populate('user');
+      } else if (user.role === 'specialist') {
+        // Specialist: fetch payments related to them (assuming you store specialistId in Payment)
+        payments = await Payment.find({ specialist: user._id }).populate('user');
+      } else if (user.role === 'user') {
+        // User: fetch only their own payments
+        payments = await Payment.find({ user: user._id });
+      } else {
+        return res.status(403).json({ message: 'Unauthorized access' });
+      }
+  
+      res.status(200).json({ success: true, payments });
+    } catch (error) {
+      console.error('Failed to get payments:', error);
+      res.status(500).json({ message: 'Failed to fetch payments', error });
+    }
+  }
+  
 }
 
 module.exports = {

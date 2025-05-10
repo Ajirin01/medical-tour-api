@@ -12,8 +12,6 @@ class GalleryController extends GeneralController {
       const { title, description, category } = req.body;
       const photo = req.file.path || req.file.filename;
 
-      console.log("$$$$$", photo)
-
       const newGalleryItem = new Gallery({
         title,
         description,
@@ -56,6 +54,17 @@ class GalleryController extends GeneralController {
     } catch (error) {
       console.error("Gallery update error:", error);
       return res.status(500).json({ message: "Failed to update gallery item" });
+    }
+  }
+
+  // Get all gallery items without pagination
+async getAllNoPagination(req, res) {
+    try {
+      const items = await Gallery.find().sort({ createdAt: -1 }); // optional: sort by newest first
+      return res.status(200).json(items);
+    } catch (error) {
+      console.error("Gallery fetch error:", error);
+      return res.status(500).json({ message: "Failed to fetch gallery items" });
     }
   }
 }
