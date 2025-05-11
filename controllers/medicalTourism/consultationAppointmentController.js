@@ -81,6 +81,7 @@ class ConsultationAppointmentController extends GeneralController {
     async createCustom(req, res) {
         try {
           const { patient, consultant, date, type } = req.body;
+          const appointmentData = req.body
       
           // Validate consultant exists and is not a patient
           const consultantUser = await UserModel.findById(consultant);
@@ -109,18 +110,18 @@ class ConsultationAppointmentController extends GeneralController {
           // Create new appointment
           const newAppointment = await ConsultationAppointment.create(req.body);
       
-        //   // Create invoice
-        //   const newInvoice = await Invoice.create({
-        //     user: patient,
-        //     purpose: "Consultation",
-        //     amount: 100,
-        //     status: "pending"
-        //   });
+          // Create invoice
+          // const newInvoice = await Invoice.create({
+          //   user: patient,
+          //   purpose: appointmentData.type,
+          //   amount: 100,
+          //   status: appointmentData.paymentStatus
+          // });
       
           res.status(201).json({
             message: "Appointment booked successfully",
             appointment: newAppointment,
-            invoice: newInvoice
+            // invoice: newInvoice
           });
         } catch (error) {
           res.status(500).json({ message: error.message });

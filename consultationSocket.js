@@ -1,6 +1,8 @@
 const { Server } = require("socket.io");
 const webpush = require("web-push");
 
+// const { generateAgoraToken } = require("./utils/agora");
+
 webpush.setVapidDetails(
     "mailto:mubarakolagoke@gmail.com",
     process.env.VAPID_PUBLIC_KEY,
@@ -98,24 +100,57 @@ function setupConsultationSocket(io) {
       const room = `appointment_${appointmentId}`;
       const session = appointmentToCallSession.get(appointmentId);
       if (!session || session.invitedSpecialistId !== specialistId) return;
-
+    
       const specialist = onlineSpecialists.get(specialistId);
       if (specialist) {
         onlineSpecialists.delete(specialistId);
         console.log(`✅ Specialist ${specialistId} accepted the call`);
-
+    
+        // Generate the token for both specialist and patient (userId assumed to be in the session)
+        const patientId = session.patientId; // You should have the patientId in the session
+        // const specialistToken = generateAgoraToken(room); // Generate token for specialist
+        // const patientToken = generateAgoraToken(room); // Generate token for patient
+    
         specialist.socketIds.forEach(sockId => {
           io.to(sockId).socketsJoin(room); // Join room
         });
-
-        io.to(room).emit("call-accepted", { appointmentId, specialistId });
+    
+        // Emit the call-accepted event with tokens for both the specialist and the patient
+        io.to(room).emit("call-accepted", {
+          appointmentId,
+          specialistId
+        });
+    
         io.emit("update-specialists", Array.from(onlineSpecialists.values()).map(v => v.data));
       }
-
+    
       clearTimeout(callTimeouts.get(appointmentId));
       callTimeouts.delete(appointmentId);
       appointmentToCallSession.delete(appointmentId);
     });
+
+    // socket.on("accept-call", ({ specialistId, appointmentId }) => {
+    //   const room = `appointment_${appointmentId}`;
+    //   const session = appointmentToCallSession.get(appointmentId);
+    //   if (!session || session.invitedSpecialistId !== specialistId) return;
+
+    //   const specialist = onlineSpecialists.get(specialistId);
+    //   if (specialist) {
+    //     onlineSpecialists.delete(specialistId);
+    //     console.log(`✅ Specialist ${specialistId} accepted the call`);
+
+    //     specialist.socketIds.forEach(sockId => {
+    //       io.to(sockId).socketsJoin(room); // Join room
+    //     });
+
+    //     io.to(room).emit("call-accepted", { appointmentId, specialistId });
+    //     io.emit("update-specialists", Array.from(onlineSpecialists.values()).map(v => v.data));
+    //   }
+
+    //   clearTimeout(callTimeouts.get(appointmentId));
+    //   callTimeouts.delete(appointmentId);
+    //   appointmentToCallSession.delete(appointmentId);
+    // });
 
     socket.on("reject-call", ({ specialistId, appointmentId }) => {
       const room = `appointment_${appointmentId}`;
@@ -131,9 +166,9 @@ function setupConsultationSocket(io) {
       console.log(`❌ Specialist ${specialistId} rejected the call`);
     });
 
-    socket.on("session-created", ({ appointmentId, session }) => {
-      console.log("📦 Received session-created for:", appointmentId, session._id);
-      io.to(`appointment_${appointmentId}`).emit("session-created", { appointmentId, session });
+    socket.on("session-created", ({ appointmentId, session, specialistToken, patientToken }) => {
+      console.log("📦 Received session-created for:", appointmentId, session._id, specialistToken, patientToken);
+      io.to(`appointment_${appointmentId}`).emit("session-created", { appointmentId, session, specialistToken, patientToken });
     });
 
     socket.on("session-ended", ({ specialist, appointmentId }) => {

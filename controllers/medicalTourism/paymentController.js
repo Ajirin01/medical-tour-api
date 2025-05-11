@@ -52,6 +52,7 @@ class PaymentController extends GeneralController {
         if (!user) {
           return res.status(404).json({ message: 'User not found' });
         }
+
   
         // Save the payment to the database
         const payment = await Payment.create({

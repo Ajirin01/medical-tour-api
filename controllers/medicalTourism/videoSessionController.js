@@ -1,5 +1,6 @@
 const VideoSession = require('../../models/medicalTourism/VideoSession');
 const SessionFeedback = require('../../models/medicalTourism/SessionFeedback');
+const { generateAgoraToken } = require("../../utils/agora");
 
 class VideoSessionController {
   constructor() {
@@ -22,10 +23,21 @@ class VideoSessionController {
   
       // Populate related fields to include in the emitted payload
       await session.populate('user specialist appointment');
+
+      const room = session._id.toString();
+
+      // console.log("@@@@@@ room", room)
+
+      const specialistToken = generateAgoraToken(room); // Generate token for specialist
+      const patientToken = generateAgoraToken(room); // Generate token for patient
   
       const payload = {
         ...session.toObject(),
+        specialistToken,
+        patientToken
       };
+
+      // console.log(payload)
   
       res.status(201).json({ success: true, session: payload });
     } catch (error) {
