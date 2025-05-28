@@ -102,6 +102,29 @@ class PaymentController extends GeneralController {
       res.status(500).json({ message: 'Failed to fetch payments', error });
     }
   }
+
+  async createPaymentIntent (req, res) {
+    const { amount } = req.body;
+  
+    console.log("first phase");
+  
+    try {
+      console.log("second phase");
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: "usd",
+      });
+  
+      res.status(200).send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    } catch (error) {
+      res.status(500).send({
+        error: error.message,
+      });
+    }
+  }
+  
   
 }
 

@@ -187,6 +187,7 @@ routeGroup('/orders', OrderController, [
 routeGroup('/payments', PaymentController, [
   ['post', '/initiate', [protect, authorize(['user', 'specialist', 'admin', 'consultant'])], PaymentController.initiatePayment],
   ['get', '/verify/custom', [protect], PaymentController.verifyPayment],
+  ['post', '/create/intent', [protect], PaymentController.createPaymentIntent],
   ['get', '/all/no-pagination', [protect, authorize(['user', 'specialist', 'admin'])], PaymentController.getPayments],
 ]);
 

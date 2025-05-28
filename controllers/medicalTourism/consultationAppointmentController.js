@@ -38,7 +38,7 @@ class ConsultationAppointmentController extends GeneralController {
             consultant,
             status,
             dateFrom,
-            dateTo,
+            dateTo
           } = req.query;
       
           const filter = {};
@@ -60,7 +60,7 @@ class ConsultationAppointmentController extends GeneralController {
           const [appointments, total] = await Promise.all([
             ConsultationAppointment.find(filter)
               .populate("patient", "firstName lastName email")
-              .populate("consultant", "firstName lastName email")
+              .populate("consultant", "firstName lastName email specialty")
               .sort({ createdAt: -1 })
               .skip(skip)
               .limit(limit),

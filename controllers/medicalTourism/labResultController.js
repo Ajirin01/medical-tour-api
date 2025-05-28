@@ -1,8 +1,8 @@
 const GeneralController = require('./GeneralController');
 const LabResult = require('../../models/medicalTourism/LabResult');
+
 const path = require('path'); // Import path module
 const fs = require('fs');
-
 class LabResultController extends GeneralController {
     constructor() {
         super(LabResult);

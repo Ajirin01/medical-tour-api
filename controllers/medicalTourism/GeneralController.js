@@ -48,11 +48,24 @@ class GeneralController {
             }
     
             const skip = (page - 1) * limit;
+            let items
+
+            if (this.model.modelName === "Medication") {
+                items = await this.model.find(filters)
+                    .populate("category")
+                    .sort(sort)
+                    .skip(skip)
+                    .limit(parseInt(limit));
+            }else{
+                items = await this.model.find(filters)
+                    .sort(sort)
+                    .skip(skip)
+                    .limit(parseInt(limit));
+            }
     
-            const items = await this.model.find(filters)
-                .sort(sort)
-                .skip(skip)
-                .limit(parseInt(limit));
+           
+
+                
     
             const total = await this.model.countDocuments(filters);
     

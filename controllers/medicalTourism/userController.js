@@ -304,7 +304,7 @@ async resendOtp(req, res) {
       if (req.files) {
         const profileImgFile     = req.files.profileImage?.[0];
         const practicingLicFile  = req.files.practicingLicense?.[0];
-        const signatureFile = req.files.signature[0];
+        const signatureFile = req.files.signature?.[0];
 
         // — profileImage
         if (profileImgFile) {

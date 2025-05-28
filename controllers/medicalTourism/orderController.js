@@ -241,8 +241,6 @@ class OrderController extends GeneralController {
       res.status(500).json({ message: "Failed to create order", error: err }); // This line may cause the error if already sent
     }
   }
-  
-  
 }
 
 module.exports = {
