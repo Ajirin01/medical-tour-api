@@ -83,7 +83,11 @@ app.use(
       "http://sozodigicare.com",
       "https://sozodigicare.com",
       "http://www.sozodigicare.com",
-      "https://www.sozodigicare.com"
+      "https://www.sozodigicare.com",
+      "https://site.sozodigicare.com",
+      "http://www.site.sozodigicare.com",
+      "https://www.site.sozodigicare.com",
+      
     ];
     const origin = req.headers.origin;
     if (allowedOrigins.includes(origin)) {
