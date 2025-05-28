@@ -1,3 +1,4 @@
+// utils/cors.js
 const cors = require("cors");
 
 const corsOptions = {
@@ -8,15 +9,15 @@ const corsOptions = {
     "http://127.0.0.1:5174",
     "http://sozodigicare.com",
     "https://sozodigicare.com",
-    "https://site.sozodigicare.com",
     "http://www.sozodigicare.com",
     "https://www.sozodigicare.com",
-    "https://www.site.sozodigicare.com"
+    "https://site.sozodigicare.com",
+    "https://www.site.sozodigicare.com",
   ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   exposedHeaders: ["Content-Type", "Authorization"],
-  credentials: true, // Ensure credentials like cookies are allowed
+  credentials: true,
 };
 
 module.exports = cors(corsOptions);

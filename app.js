@@ -21,6 +21,7 @@ const app = express();
 
 // Enable CORS
 app.use(customCors);
+app.options("*", customCors); 
 
 // app.use(cookieParser());
 
