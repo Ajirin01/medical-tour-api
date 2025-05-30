@@ -6,7 +6,7 @@ const ConsultationAppointmentSchema = new mongoose.Schema({
   date: { type: Date, required: true },
   duration: { type: Number, required: true }, // Duration in minutes
   status: { type: String, enum: ['pending', 'confirmed', 'completed', 'cancelled', 'ongoing'], default: 'pending' },
-  type: { type: String, enum: ['general', 'medicalTourism'], required: true },
+  type: { type: String, enum: ['general', 'medicalTourism', 'future'], required: true },
   paymentStatus: { type: String, enum: ['pending', 'paid', 'refunded'], default: 'pending' }
 }, { timestamps: true });
 

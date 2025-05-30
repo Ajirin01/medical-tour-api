@@ -20,7 +20,7 @@ class AvailabilityController extends GeneralController {
 
    async getByRole(req, res) {
     try {
-      const { userRole } = req.query
+      const { userRole, consultantId } = req.query
   
       if (!userRole) {
         return res.status(400).json({ message: 'userRole query param is required' })
@@ -29,12 +29,16 @@ class AvailabilityController extends GeneralController {
       const availabilities = await Availability.find()
         .populate({
           path: 'user',
-          match: { role: userRole }, // Filter only users with the role
+          match: { role: userRole}, // Filter only users with the role
           select: 'role firstName lastName email', // Optional: only pull what you need
         })
 
+        
+
       // Remove any availability where `user` was not matched (i.e., not the specified role)
-      const filtered = availabilities.filter(a => a.user !== null)
+      const filtered = availabilities.filter(a => a.user?._id.toString() === consultantId)
+
+      console.log(filtered)
   
       res.json({ data: filtered })
     } catch (err) {
