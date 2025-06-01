@@ -1,4 +1,4 @@
-// controllers/UserController.js
+const axios = require("axios");
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const GeneralController = require('./GeneralController');
@@ -15,6 +15,8 @@ const Specialist = require('../../models/medicalTourism/SpecialistUser');
 const Patient = require('../../models/medicalTourism/UserDefault');
 const Consultant = require('../../models/medicalTourism/ConsultantUser');
 const Admin = require('../../models/medicalTourism/AdminUser');
+
+const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
 
 const models = {
   specialist: Specialist,
@@ -61,22 +63,40 @@ class UserController extends GeneralController {
 
   async register(req, res) {
     try {
-      const { email, password, role } = req.body;
+      const { email, password, role, captchaToken } = req.body;
   
       console.log("register hit");
       console.log(req.body);
   
-      if (!email || !password || !role) {
+      // Validate required fields
+      if (!email || !password || !role || !captchaToken) {
         return res.status(400).json({
-          message: "Email, password, and role are required",
+          message: "Email, password, role, and captchaToken are required",
         });
+      }
+  
+      // Verify captcha token with Google
+      const captchaResponse = await axios.post(
+        'https://www.google.com/recaptcha/api/siteverify',
+        new URLSearchParams({
+          secret: process.env.RECAPTCHA_SECRET_KEY,
+          response: captchaToken,
+        }).toString(),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        }
+      );
+  
+      if (!captchaResponse.data.success) {
+        return res.status(400).json({ message: "Failed CAPTCHA verification" });
       }
   
       const existingUser = await User.findOne({ email });
   
       if (existingUser) {
         if (!existingUser.isEmailVerified) {
-          // Regenerate OTP and update user
           const otp = generateOTP();
           const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
   
@@ -95,7 +115,7 @@ class UserController extends GeneralController {
         return res.status(400).json({ message: "Email already registered" });
       }
   
-      // New user registration
+      // Register new user
       const otp = generateOTP();
       const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -352,6 +372,79 @@ async resendOtp(req, res) {
         message: 'Failed to complete profile',
         error: err.message,
       });
+    }
+  }
+
+  async forgotPassword(req, res) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const user = await User.findOne({ email });
+
+      if (!user) {
+        // To avoid user enumeration, you can return success anyway
+        return res.status(200).json({ message: "If the email exists, a reset link has been sent." });
+      }
+
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const resetTokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+      user.resetPasswordToken = resetTokenHash;
+      user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour expiration
+
+      await user.save();
+
+      // Construct reset URL
+      const resetUrl = `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+      const message = `You requested a password reset. Click the link to reset your password:\n\n${resetUrl}\n\nIf you did not request this, ignore this email.`;
+
+      await sendEmail(email, "Password Reset Request", message);
+
+      res.status(200).json({ message: "If the email exists, a reset link has been sent." });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Error sending reset password email", error: error.message });
+    }
+  }
+
+  async resetPassword(req, res) {
+    try {
+      const { email, token, password } = req.body;
+
+      if (!email || !token || !password) {
+        return res.status(400).json({ message: "Email, token, and new password are required", requestBody: req.body });
+      }
+
+      // Hash the received token to compare with stored hash
+      const resetTokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+      const user = await User.findOne({
+        email,
+        resetPasswordToken: resetTokenHash,
+        resetPasswordExpires: { $gt: Date.now() },
+      });
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired password reset token" });
+      }
+
+      // Hash new password and save
+      user.password = await bcrypt.hash(password, 10);
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+
+      await user.save();
+
+      res.status(200).json({ message: "Password reset successful" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Error resetting password", error: error.message });
     }
   }
 

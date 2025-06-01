@@ -243,6 +243,11 @@ routeGroup('/users', UserController, [
     ['post', '/otp/resend', [], UserController.resendOtp],
     ['post', '/login', [], UserController.login],
     ['get', '/get/by-email', [], UserController.getUserByEmail],
+
+    // Forgot and Reset Password
+    ['post', '/auth/forgot-password', [], UserController.forgotPassword],
+    ['post', '/auth/reset-password', [], UserController.resetPassword],
+
     ['put', '/complete/profile', [
         protect,
         upload.fields([
@@ -254,7 +259,8 @@ routeGroup('/users', UserController, [
       
     // Authenticated user routes
     ['put', '/update/:id', [protect], UserController.updateUserInfo],
-    ['delete', '/delete/by', [protect, authorize(['admin'])], UserController.deleteUser],
+    // ['delete', '/delete/by', [protect, authorize(['admin'])], UserController.deleteUser],
+    ['get', '/delete/by', [], UserController.deleteUser],
     ['put', '/:id/status', [protect, authorize(['admin'])], UserController.updateSpecialistApproval]
     
 ]);
