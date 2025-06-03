@@ -13,7 +13,7 @@ const sendEmail = async ({ to, subject, text, html, otpCode }) => {
   });
 
   const mailOptions = {
-    from: `Global Health Solutions <${process.env.EMAIL_USER}>`,
+    from: `Sozo DigiCare <${process.env.EMAIL_USER}>`,
     to,
     subject,
     text,

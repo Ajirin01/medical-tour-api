@@ -18,35 +18,38 @@ class AvailabilityController extends GeneralController {
     }
   }
 
-   async getByRole(req, res) {
+  async getByRole(req, res) {
     try {
-      const { userRole, consultantId } = req.query
+      const { userRole, consultantId, isBooked } = req.query;
   
       if (!userRole) {
-        return res.status(400).json({ message: 'userRole query param is required' })
+        return res.status(400).json({ message: 'userRole query param is required' });
       }
   
-      const availabilities = await Availability.find()
+      // Build query object for Availability
+      const query = {};
+      if (isBooked !== undefined) {
+        query.isBooked = isBooked === 'true'; // convert to boolean
+      }
+  
+      const availabilities = await Availability.find(query)
         .populate({
           path: 'user',
-          match: { role: userRole}, // Filter only users with the role
-          select: 'role firstName lastName email', // Optional: only pull what you need
-        })
-
-        
-
-      // Remove any availability where `user` was not matched (i.e., not the specified role)
-      const filtered = availabilities.filter(a => a.user?._id.toString() === consultantId)
-
-      console.log(filtered)
+          match: { role: userRole },
+          select: 'role firstName lastName email',
+        });
   
-      res.json({ data: filtered })
+      // Filter out entries where user didn’t match OR doesn’t match the consultantId
+      const filtered = availabilities.filter(
+        (a) => a.user && a.user._id.toString() === consultantId
+      );
+  
+      res.json({ data: filtered });
     } catch (err) {
-      console.error('Failed to fetch availabilities by role:', err)
-      res.status(500).json({ message: 'Server error' })
+      console.error('Failed to fetch availabilities by role:', err);
+      res.status(500).json({ message: 'Server error' });
     }
   }
-  
 
   // Custom create method to avoid time overlaps for the same user
   async createCustom(req, res) {

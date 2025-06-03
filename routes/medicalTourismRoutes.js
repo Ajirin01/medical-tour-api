@@ -241,6 +241,7 @@ routeGroup('/users', UserController, [
     ['post', '/register', [], UserController.register],
     ['post', '/otp/verify', [], UserController.verifyOtp],
     ['post', '/otp/resend', [], UserController.resendOtp],
+    ['get', '/test/email', [], UserController.testEmail],
     ['post', '/login', [], UserController.login],
     ['get', '/get/by-email', [], UserController.getUserByEmail],
 
