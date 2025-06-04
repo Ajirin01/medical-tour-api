@@ -30,6 +30,9 @@ const { PushNotificationController } = require('../controllers/medicalTourism/pu
 const { VideoSessionController } = require('../controllers/medicalTourism/videoSessionController');
 const { GalleryController } = require('../controllers/medicalTourism/galleryController');
 const { BlogController } = require('../controllers/medicalTourism/blogController');
+const { ChatbotController } = require('../controllers/medicalTourism/ChatbotController');
+
+
 
 
 const routeGroup = (prefix, controller, extraRoutes = []) => {
@@ -92,6 +95,7 @@ routeGroup('/consultation-appointments', ConsultationAppointmentController, [
     ['post', '/create/custom', [protect, authorize(['admin', 'specialist', 'consultant', 'user'])], ConsultationAppointmentController.createCustom],
     ['put', '/update/custom/:id', [protect, authorize(['admin', 'specialist', 'consultant', 'user'])], ConsultationAppointmentController.updateCustom],
     ['get', '/all/paginated', [protect, authorize(['user', 'admin', 'specialist', 'consultant'])], ConsultationAppointmentController.getPaginatedWithUsers],
+    ['get', '/all/no/pagination', [protect], ConsultationAppointmentController.getNoPaginate],
     ['get', '/get/custom/:id', [protect, authorize(['user', 'admin', 'specialist', 'consultant'])], ConsultationAppointmentController.getOneWithUsers]
 ]);
 routeGroup('/consultation-documents', ConsultationDocumentationController, [
@@ -368,5 +372,12 @@ routeGroup('/blogs', BlogController, [
   // Override update
   ['put', '/custom/update/:id', [protect, authorize(['admin']), upload.single('featuredImage')], BlogController.updateCustom],
 ]);
+
+routeGroup('/chatbot', ChatbotController, [
+  // Predict disease based on symptoms or question
+  ['post', '/predict_disease', [], ChatbotController.predictDisease],
+]);
+
+
 
 module.exports = router;

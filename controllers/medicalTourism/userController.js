@@ -523,13 +523,20 @@ class UserController extends GeneralController {
         "utf8"
       );
       const template = handlebars.compile(templateSource);
+
+      const emailBody = `
+        📅 Date: 20/10/2025 
+        ⏰ Time: 10:30 - 11:00
+        💻 Mode: Video
+        🔗 Please check your dashboard for more details.
+      `;
   
       const html = template({
         subject: "Password Reset Request",
         recipientName: "mubarakolagoke@gmail.com",
         bodyIntro: "You requested to reset your password for your Zozo DigiCare account.",
         highlightText: "Click the link below to reset your password:",
-        bodyOutro: `<Testing went well`,
+        bodyOutro: emailBody,
         year: new Date().getFullYear(),
       });
   

@@ -84,6 +84,47 @@ class ConsultationAppointmentController extends GeneralController {
       }
   }
 
+  async getNoPaginate(req, res) {
+    try {
+      const {
+        patient,
+        consultant,
+        status,
+        dateFrom,
+        dateTo
+      } = req.query;
+  
+      const filter = {};
+  
+      if (patient) filter.patient = patient;
+      if (consultant) filter.consultant = consultant;
+      if (status) filter.status = status;
+  
+      if (dateFrom || dateTo) {
+        filter.date = {};
+        if (dateFrom) filter.date.$gte = new Date(dateFrom);
+        if (dateTo) {
+          const endOfDay = new Date(dateTo);
+          endOfDay.setHours(23, 59, 59, 999);
+          filter.date.$lte = endOfDay;
+        }
+      }
+  
+      const [appointments, total] = await Promise.all([
+        ConsultationAppointment.find(filter)
+          .populate("patient", "firstName lastName email")
+          .populate("consultant", "firstName lastName email specialty")
+          .populate("slot")
+          .sort({ createdAt: -1 }),
+        ConsultationAppointment.countDocuments(filter),
+      ]);
+  
+      res.status(200).json(appointments);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
   async createCustom(req, res) {
     try {
       const { patient, consultant, date, type, mode, slot } = req.body;
@@ -106,13 +147,6 @@ class ConsultationAppointmentController extends GeneralController {
         status: { $in: ['pending', 'confirmed'] },
       });
   
-      if (existingAppointment && mode === "appointment") {
-        return res.status(400).json({
-          message: "Appointment already exists",
-          appointment: existingAppointment,
-        });
-      }
-  
       if (mode === "appointment") {
         const availabilitySlot = await Availability.findById(availabilityId);
   
@@ -123,14 +157,26 @@ class ConsultationAppointmentController extends GeneralController {
         if (availabilitySlot.isBooked) {
           return res.status(400).json({ message: "This slot has already been booked." });
         }
+
+        if (existingAppointment && existingAppointment.slot === availabilitySlot) {
+          return res.status(400).json({
+            message: "Appointment already exists",
+            appointment: existingAppointment,
+          });
+        }
   
-        // Mark as booked
-        availabilitySlot.isBooked = true;
-        await availabilitySlot.save();
+        if(slot.type !== "recurring"){
+          // Mark as booked
+          availabilitySlot.isBooked = true;
+          await availabilitySlot.save();
+        }
       }
+
+      let appointmentData = req.body
+      appointmentData = {...appointmentData, slot: availabilityId}
   
       // Create the appointment
-      const newAppointment = await ConsultationAppointment.create(req.body);
+      const newAppointment = await ConsultationAppointment.create(appointmentData);
   
       // Fetch patient user for email
       const patientUser = await UserModel.findById(patient);
@@ -148,15 +194,36 @@ class ConsultationAppointmentController extends GeneralController {
       // Email content
       const template = handlebars.compile(templateSource);
 
-      // Create consultant email content
-      const consultantHtml = template({
-        subject: "New Appointment Booked",
-        recipientName: consultantUser.firstName || "Consultant",
-        bodyIntro: `A new appointment has been scheduled with you.`,
-        highlightText: `Patient: ${patientUser.firstName} ${patientUser.lastName || ""}`,
-        bodyOutro: `Date: ${formattedDate}<br>Time: ${timeRange}<br>Mode: ${mode}<br><br>Please log in to your dashboard to view details.`,
-        year: new Date().getFullYear(),
-      });
+      const emailBody = `
+        📅 Date: ${formattedDate}
+        ⏰ Time: ${timeRange}
+        💻 Mode: ${mode}
+
+        🔗 Please check your dashboard for more details.
+      `;
+
+      let consultantHtml
+      if(slot.category === "cert"){
+        // Create consultant email content
+        consultantHtml = template({
+          subject: "New Appointment Booked",
+          recipientName: consultantUser.firstName || "Consultant",
+          bodyIntro: `A new appointment for medical certification has been scheduled with you.`,
+          highlightText: `Patient: ${patientUser.firstName} ${patientUser.lastName || ""}`,
+          bodyOutro: emailBody,
+          year: new Date().getFullYear(),
+        });
+      }else{
+        // Create consultant email content
+        consultantHtml = template({
+          subject: "New Appointment Booked",
+          recipientName: consultantUser.firstName || "Consultant",
+          bodyIntro: `A new appointment has been scheduled with you.`,
+          highlightText: `Patient: ${patientUser.firstName} ${patientUser.lastName || ""}`,
+          bodyOutro: emailBody,
+          year: new Date().getFullYear(),
+        });
+      }
 
       // Create patient email content
       const patientHtml = template({
@@ -164,7 +231,7 @@ class ConsultationAppointmentController extends GeneralController {
         recipientName: patientUser.firstName || "Patient",
         bodyIntro: `Your appointment has been successfully booked.`,
         highlightText: `Consultant: ${consultantUser.firstName} ${consultantUser.lastName || ""}`,
-        bodyOutro: `Date: ${formattedDate}<br>Time: ${timeRange}<br>Mode: ${mode}<br><br>Please check your dashboard for more details.`,
+        bodyOutro: emailBody,
         year: new Date().getFullYear(),
       });
 

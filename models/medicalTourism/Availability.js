@@ -15,6 +15,12 @@ const availabilitySchema = new mongoose.Schema(
       default: "recurring",
     },
 
+    category: {
+      type: String,
+      enu: ["general", "cert"],
+      default: "general"
+    },
+
     // For recurring: use day of week
     dayOfWeek: {
       type: String,
