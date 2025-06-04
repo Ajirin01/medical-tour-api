@@ -238,7 +238,7 @@ routeGroup('/categories', CategoryController, [
 // 📌 User Routes (Admin Only + Public Access Where Applicable)
 routeGroup('/users', UserController, [
     // Admin-only route to get all users (no pagination)
-    ['get', '/get-all/no-pagination', [protect], UserController.getAllUsers],
+    ['get', '/get-all/no-pagination', [protect, authorize(['admin', 'superadmin'])], UserController.getAllUsers],
     ['get', '/get-all/doctors/no-pagination', [], UserController.getAllDoctors],
   
     // Public routes

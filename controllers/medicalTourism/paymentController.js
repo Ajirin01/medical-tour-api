@@ -78,29 +78,88 @@ class PaymentController extends GeneralController {
   }
 
   async getPayments(req, res) {
+    const { range, limit } = req.query;
+    const paymentLimit = limit ? parseInt(limit) : 100; // default 100 if no limit passed
+  
     try {
-      const user = req.user;
+      let startDate;
+      const now = new Date();
   
-      let payments;
-  
-      if (user.role === 'admin') {
-        // Admin: fetch all payments
-        payments = await Payment.find().populate('user');
-      } else if (user.role === 'specialist') {
-        // Specialist: fetch payments related to them (assuming you store specialistId in Payment)
-        payments = await Payment.find({ specialist: user._id }).populate('user');
-      } else if (user.role === 'user') {
-        // User: fetch only their own payments
-        payments = await Payment.find({ user: user._id });
-      } else {
-        return res.status(403).json({ message: 'Unauthorized access' });
+      switch (range) {
+        case "today":
+          startDate = new Date(now.setHours(0, 0, 0, 0));
+          break;
+        case "week":
+          startDate = new Date(now.setDate(now.getDate() - 7));
+          break;
+        case "month":
+          startDate = new Date(now.setMonth(now.getMonth() - 1));
+          break;
+        case "year":
+          startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+          break;
+        default:
+          startDate = new Date(0);
       }
   
-      res.status(200).json({ success: true, payments });
+      const payments = await stripe.paymentIntents.list({
+        created: { gte: Math.floor(startDate.getTime() / 1000) },
+        limit: paymentLimit,
+        expand: ["data.customer"],
+      });
+
+      // Calculate stats
+      const stats = {
+        totalRevenue: 0,
+        successfulPayments: 0,
+        failedPayments: 0,
+        averageAmount: 0,
+      };
+
+      payments.data.forEach((payment) => {
+        if (payment.status === "succeeded") {
+          stats.totalRevenue += payment.amount / 100;
+          stats.successfulPayments++;
+        } else {
+          stats.failedPayments++;
+        }
+      });
+
+      stats.averageAmount =
+        stats.totalRevenue / (stats.successfulPayments || 1);
+
+      res.json({
+        payments: payments.data,
+        stats,
+      });
     } catch (error) {
-      console.error('Failed to get payments:', error);
-      res.status(500).json({ message: 'Failed to fetch payments', error });
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ error: "Failed to fetch transactions" });
     }
+
+    // try {
+    //   const user = req.user;
+  
+    //   let payments;
+  
+    //   if (user.role === 'admin') {
+    //     // Admin: fetch all payments
+    //     payments = await Payment.find().populate('user');
+    //   } else if (user.role === 'specialist') {
+    //     // Specialist: fetch payments related to them (assuming you store specialistId in Payment)
+    //     payments = await Payment.find({ specialist: user._id }).populate('user');
+    //   } else if (user.role === 'user') {
+    //     // User: fetch only their own payments
+    //     payments = await Payment.find({ user: user._id });
+    //   } else {
+    //     return res.status(403).json({ message: 'Unauthorized access' });
+    //   }
+  
+    //   res.status(200).json({ success: true, payments });
+    // } catch (error) {
+    //   console.error('Failed to get payments:', error);
+    //   res.status(500).json({ message: 'Failed to fetch payments', error });
+    // }
   }
 
   async createPaymentIntent (req, res) {

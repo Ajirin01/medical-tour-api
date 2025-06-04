@@ -142,7 +142,7 @@ class VideoSessionController {
       }
       // If the role is 'specialist', fetch only sessions where the specialist matches the user's ID
       else if (userRole === 'specialist') {
-        query = { 'specialist._id': req.user._id }; // Filter by specialist
+        query = { 'specialist': req.user._id }; // Filter by specialist
       }
       // If the role is 'user', fetch only sessions where the user matches the userId in the route
       else if (userRole === 'user') {
@@ -202,12 +202,22 @@ class VideoSessionController {
   // Get prescriptions by user ID
   async getPrescriptionsByUser(req, res) {
     try {
-      const sessions = await VideoSession.find({
-        user: req.params.userId,
-        prescriptions: { $exists: true, $not: { $size: 0 } },
-      })
-        .populate('user specialist appointment')
-        .sort({ createdAt: -1 });
+      let sessions
+      if(req.user.role === "admin"){
+        sessions = await VideoSession.find({
+          prescriptions: { $exists: true, $not: { $size: 0 } },
+        })
+          .populate('user specialist appointment')
+          .sort({ createdAt: -1 });
+      }else{
+        sessions = await VideoSession.find({
+          user: req.params.userId,
+          prescriptions: { $exists: true, $not: { $size: 0 } },
+        })
+          .populate('user specialist appointment')
+          .sort({ createdAt: -1 });
+      }
+      
   
       res.status(200).json({ success: true, sessions });
     } catch (error) {
