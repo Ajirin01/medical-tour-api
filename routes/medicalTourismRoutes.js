@@ -53,19 +53,19 @@ const routeGroup = (prefix, controller, extraRoutes = []) => {
         method: 'post',
         path: '/',
         handlerName: 'create',
-        middlewares: [protect, authorize(['admin', 'specialist', 'consultant', 'pharmacyAdmin', 'labAdmin'])],
+        middlewares: [protect, authorize(['admin', 'superAdmin', 'specialist', 'consultant', 'pharmacyAdmin', 'labAdmin'])],
       },
       {
         method: 'put',
         path: '/:id',
         handlerName: 'update',
-        middlewares: [protect, authorize(['admin', 'specialist', 'consultant', 'pharmacyAdmin', 'labAdmin'])],
+        middlewares: [protect, authorize(['admin', 'superAdmin', 'specialist', 'consultant', 'pharmacyAdmin', 'labAdmin'])],
       },
       {
         method: 'delete',
         path: '/:id',
         handlerName: 'delete',
-        middlewares: [protect, authorize(['admin', 'specialist', 'consultant', 'pharmacyAdmin', 'labAdmin'])],
+        middlewares: [protect, authorize(['admin', 'superAdmin', 'specialist', 'consultant', 'pharmacyAdmin', 'labAdmin'])],
       },
     ];
   
@@ -92,54 +92,54 @@ routeGroup('/booking', BookingController, [
 // 📌 Consultation Routes (Specialist & Consultant Access)
 routeGroup('/consultation-appointments', ConsultationAppointmentController, [
     ['get', '/get/all/simple', [], ConsultationAppointmentController.getAllSimple],
-    ['post', '/create/custom', [protect, authorize(['admin', 'specialist', 'consultant', 'user'])], ConsultationAppointmentController.createCustom],
-    ['put', '/update/custom/:id', [protect, authorize(['admin', 'specialist', 'consultant', 'user'])], ConsultationAppointmentController.updateCustom],
-    ['get', '/all/paginated', [protect, authorize(['user', 'admin', 'specialist', 'consultant'])], ConsultationAppointmentController.getPaginatedWithUsers],
+    ['post', '/create/custom', [protect, authorize(['admin', 'superAdmin', 'specialist', 'consultant', 'user'])], ConsultationAppointmentController.createCustom],
+    ['put', '/update/custom/:id', [protect, authorize(['admin', 'superAdmin', 'specialist', 'consultant', 'user'])], ConsultationAppointmentController.updateCustom],
+    ['get', '/all/paginated', [protect, authorize(['user', 'admin', 'superAdmin', 'specialist', 'consultant'])], ConsultationAppointmentController.getPaginatedWithUsers],
     ['get', '/all/no/pagination', [protect], ConsultationAppointmentController.getNoPaginate],
-    ['get', '/get/custom/:id', [protect, authorize(['user', 'admin', 'specialist', 'consultant'])], ConsultationAppointmentController.getOneWithUsers]
+    ['get', '/get/custom/:id', [protect, authorize(['user', 'admin', 'superAdmin', 'specialist', 'consultant'])], ConsultationAppointmentController.getOneWithUsers]
 ]);
 routeGroup('/consultation-documents', ConsultationDocumentationController, [
-    ['post', '/create/custom', [protect, authorize(['admin', 'specialist', 'consultant']), upload.single('document')], ConsultationDocumentationController.createCustom],
-    ['get', '/get/all/custom', [protect, authorize(['admin', 'consultant', 'specialist'])], ConsultationDocumentationController.getAllCustom],
-    ['get', '/get/custom/:id', [protect, authorize(['admin', 'consultant', 'specialist'])], ConsultationDocumentationController.getOneCustom],
-    ['put', '/update/custom/:id', [protect, authorize(['admin', 'specialist', 'consultant']), upload.single('document')], ConsultationDocumentationController.updateCustom],
-    ['put', '/add/file/custom/:id', [protect, authorize(['admin', 'specialist', 'consultant']), upload.single('document')], ConsultationDocumentationController.addFile],
-    ['post', '/delete/file/custom/:id', [protect, authorize(['admin', 'specialist', 'consultant']), upload.single('document')], ConsultationDocumentationController.deleteFile]
+    ['post', '/create/custom', [protect, authorize(['admin', 'superAdmin', 'specialist', 'consultant']), upload.single('document')], ConsultationDocumentationController.createCustom],
+    ['get', '/get/all/custom', [protect, authorize(['admin', 'superAdmin', 'consultant', 'specialist'])], ConsultationDocumentationController.getAllCustom],
+    ['get', '/get/custom/:id', [protect, authorize(['admin', 'superAdmin', 'consultant', 'specialist'])], ConsultationDocumentationController.getOneCustom],
+    ['put', '/update/custom/:id', [protect, authorize(['admin', 'superAdmin', 'specialist', 'consultant']), upload.single('document')], ConsultationDocumentationController.updateCustom],
+    ['put', '/add/file/custom/:id', [protect, authorize(['admin', 'superAdmin', 'specialist', 'consultant']), upload.single('document')], ConsultationDocumentationController.addFile],
+    ['post', '/delete/file/custom/:id', [protect, authorize(['admin', 'superAdmin', 'specialist', 'consultant']), upload.single('document')], ConsultationDocumentationController.deleteFile]
 ]);
 
 // 📌 Invoices (Admin & Consultant Can Generate Invoices)
 routeGroup('/invoice', InvoiceController, [
-    ['post', '/', [protect, authorize(['admin', 'consultant'])], InvoiceController.create],
+    ['post', '/', [protect, authorize(['admin', 'superAdmin', 'consultant'])], InvoiceController.create],
 ]);
 
 // 📌 Laboratory (Lab Admin & Lab Employees Manage Lab)
 routeGroup('/laboratories', LaboratoryController, [
     ['get', '/get-all/no-pagination', [], LaboratoryController.getAllLaboratories],
 
-    ['put', '/custom/update/:id', [protect, authorize(['admin']), upload.single('resultFile')], LaboratoryController.customUpdate],
+    ['put', '/custom/update/:id', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LaboratoryController.customUpdate],
 
-    ['post', '/custom/create', [protect, authorize(['admin']), upload.single('resultFile')], LaboratoryController.customCreate]
+    ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LaboratoryController.customCreate]
 ]);
 
 // 📌 Laboratory (Lab Admin & Lab Employees Manage Lab Services)
 routeGroup('/lab-results', LabResultController, [
-    ['post', '/', [protect, authorize(['admin', 'labAdmin', 'labEmployee'])], LabResultController.create],
+    ['post', '/', [protect, authorize(['admin', 'superAdmin', 'labAdmin', 'labEmployee'])], LabResultController.create],
 
     ['get', '/get-all/no-pagination', [], LabResultController.getAllLabResults],
 
-    ['put', '/custom/update/:id', [protect, authorize(['admin']), upload.single('resultFile')], LabResultController.customUpdate],
+    ['put', '/custom/update/:id', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LabResultController.customUpdate],
 
-    ['post', '/custom/create', [protect, authorize(['admin']), upload.single('resultFile')], LabResultController.customCreate]
+    ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LabResultController.customCreate]
 ]);
 routeGroup('/lab-services', LabServiceController, [
-    ['post', '/', [protect, authorize(['admin','labAdmin'])], LabServiceController.create],
+    ['post', '/', [protect, authorize(['admin', 'superAdmin','labAdmin'])], LabServiceController.create],
     ['get', '/get-all/no-pagination', [], LabServiceController.getAllLabServices],
 ]);
 
 // 📌 Medical Tourism Packages (Only Admin Can Manage Packages)
 routeGroup('/tour', MedicalTourismPackageController, [
-    ['post', '/create/custom', [protect, authorize(['admin']), upload.single('photo')], MedicalTourismPackageController.createPackage],
-    ['put', '/update/custom/:id', [protect, authorize(['admin']), upload.single('photo')], MedicalTourismPackageController.updatePackage],
+    ['post', '/create/custom', [protect, authorize(['admin', 'superAdmin']), upload.single('photo')], MedicalTourismPackageController.createPackage],
+    ['put', '/update/custom/:id', [protect, authorize(['admin', 'superAdmin']), upload.single('photo')], MedicalTourismPackageController.updatePackage],
     ['get', '/get-all/no-pagination', [], MedicalTourismPackageController.getAllPackages],
 ]);
 
@@ -149,12 +149,12 @@ routeGroup('/products', MedicationController, [
     ['get', '/get-all/brand-category', [], MedicationController.getAllWithBrandAndCategory]
 ]);
 routeGroup('/pharmacies', PharmacyController, [
-    ['post', '/', [protect, authorize(['admin'])], PharmacyController.create],
+    ['post', '/', [protect, authorize(['admin', 'superAdmin'])], PharmacyController.create],
     ['get', '/get-all/no-pagination', [], PharmacyController.getAllPharmacies],
 
-    ['put', '/custom/update/:id', [protect, authorize(['admin']), upload.single('licenseFile')], PharmacyController.customUpdate],
+    ['put', '/custom/update/:id', [protect, authorize(['admin', 'superAdmin']), upload.single('licenseFile')], PharmacyController.customUpdate],
 
-    ['post', '/custom/create', [protect, authorize(['admin']), upload.single('licenseFile')], PharmacyController.customCreate]
+    ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('licenseFile')], PharmacyController.customCreate]
 ]);
 // 📌 Cart Routes (Users can manage their cart)
 routeGroup('/cart', CartController, [
@@ -172,37 +172,37 @@ routeGroup('/cart', CartController, [
     ['post', '/approve-prescription-link', [protect], CartController.approveCartPrescriptionLink], // Approve prescription link
     ['post', '/reject-prescription-link', [protect], CartController.rejectCartPrescriptionLink], // Reject prescription link
 
-    ['get', '/linked-prescriptions/by/status', [protect, authorize(['admin'])], CartController.getPrescriptionsByStatus], // Get prescriptions by status
+    ['get', '/linked-prescriptions/by/status', [protect, authorize(['admin', 'superAdmin'])], CartController.getPrescriptionsByStatus], // Get prescriptions by status
 
-    ['put', '/update/linked-prescriptions', [protect, authorize(['admin'])], CartController.updateCartPrescriptionLinkStatus]
+    ['put', '/update/linked-prescriptions', [protect, authorize(['admin', 'superAdmin'])], CartController.updateCartPrescriptionLinkStatus]
 ]);
 
 
 // 📌 Orders (User Can Order, Pharmacy Admin Manages)
 routeGroup('/orders', OrderController, [
-    ['post', '/', [protect, authorize(['user', 'admin'])], OrderController.create],
-    ['get', '/get/user/custom', [protect, authorize(['user', 'admin'])], OrderController.getOrdersByUser],
-    ['get', '/filter/by', [protect, authorize(['user', 'admin'])], OrderController.getAllOrders],
-    ['post', '/create/manual', [protect, authorize(['user', 'admin'])], OrderController.createOrderManually],
-    ['get', '/custom/:id', [protect, authorize(['user', 'admin'])], OrderController.getOrderById],
+    ['post', '/', [protect, authorize(['user', 'admin', 'superAdmin'])], OrderController.create],
+    ['get', '/get/user/custom', [protect, authorize(['user', 'admin', 'superAdmin'])], OrderController.getOrdersByUser],
+    ['get', '/filter/by', [protect, authorize(['user', 'admin', 'superAdmin'])], OrderController.getAllOrders],
+    ['post', '/create/manual', [protect, authorize(['user', 'admin', 'superAdmin'])], OrderController.createOrderManually],
+    ['get', '/custom/:id', [protect, authorize(['user', 'admin', 'superAdmin'])], OrderController.getOrderById],
 ]);
 
 // 📌 Payments (All Users Can Initiate, Admin/Specialist/User Can View Their Payments)
 routeGroup('/payments', PaymentController, [
-  ['post', '/initiate', [protect, authorize(['user', 'specialist', 'admin', 'consultant'])], PaymentController.initiatePayment],
+  ['post', '/initiate', [protect, authorize(['user', 'specialist', 'admin', 'superAdmin', 'consultant'])], PaymentController.initiatePayment],
   ['get', '/verify/custom', [protect], PaymentController.verifyPayment],
   ['post', '/create/intent', [protect], PaymentController.createPaymentIntent],
-  ['get', '/all/no-pagination', [protect, authorize(['user', 'specialist', 'admin'])], PaymentController.getPayments],
+  ['get', '/all/no-pagination', [protect, authorize(['user', 'specialist', 'admin', 'superAdmin'])], PaymentController.getPayments],
 ]);
 
 
 // 📌 Hospitals & Services (Admin Only)
 routeGroup('/hospitals', HospitalController, [
-  ['post', '/custom/create', [protect, authorize(['admin']), upload.single('photo')], HospitalController.createCustom],
-  ['put', '/custom/update/:id', [protect, authorize(['admin']), upload.single('photo')], HospitalController.updateCustom],
+  ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('photo')], HospitalController.createCustom],
+  ['put', '/custom/update/:id', [protect, authorize(['admin', 'superAdmin']), upload.single('photo')], HospitalController.updateCustom],
 ]);
 routeGroup('/hospital-services', HospitalServiceController, [
-    ['post', '/', [protect, authorize(['admin'])], HospitalServiceController.create],
+    ['post', '/', [protect, authorize(['admin', 'superAdmin'])], HospitalServiceController.create],
 ]);
 
 // 📌 Prescription Routes
@@ -213,24 +213,24 @@ routeGroup("/prescriptions", PrescriptionController, [
     ["put", "/reject/:id", [protect, authorize(["admin", "pharmacyAdmin"])], PrescriptionController.rejectPrescription], // Reject prescription
     ["delete", "/delete/custom/:id", [protect, authorize(["admin", "pharmacyAdmin"])], PrescriptionController.delete], // Reject prescription
 
-    ["get", "/by/status", [protect, authorize(['admin'])], PrescriptionController.getPrescriptionsByStatus], // Get prescriptions by status
+    ["get", "/by/status", [protect, authorize(['admin', 'superAdmin'])], PrescriptionController.getPrescriptionsByStatus], // Get prescriptions by status
   ]);
 
 // 📌 Brand Routes (Admin Only)
 routeGroup('/brands', BrandController, [
-    ['post', '/create', [protect, authorize(['admin']), upload.single('logo')],  BrandController.createBrand],
-    ['put', '/update/:id', [protect, authorize(['admin']), upload.single('logo')],  BrandController.updateBrand],
-    ['put', '/:id', [protect, authorize(['admin'])], BrandController.update],
-    ['delete', '/:id', [protect, authorize(['admin'])], BrandController.delete],
+    ['post', '/create', [protect, authorize(['admin', 'superAdmin']), upload.single('logo')],  BrandController.createBrand],
+    ['put', '/update/:id', [protect, authorize(['admin', 'superAdmin']), upload.single('logo')],  BrandController.updateBrand],
+    ['put', '/:id', [protect, authorize(['admin', 'superAdmin'])], BrandController.update],
+    ['delete', '/:id', [protect, authorize(['admin', 'superAdmin'])], BrandController.delete],
 
     ['get', '/get-all/no-pagination', [], BrandController.getAllBrands],
 ]);
 
 // 📌 Category Routes (Admin Only)
 routeGroup('/categories', CategoryController, [
-    ['post', '/', [protect, authorize(['admin'])], CategoryController.create],
-    ['put', '/:id', [protect, authorize(['admin'])], CategoryController.update],
-    ['delete', '/:id', [protect, authorize(['admin'])], CategoryController.delete],
+    ['post', '/', [protect, authorize(['admin', 'superAdmin'])], CategoryController.create],
+    ['put', '/:id', [protect, authorize(['admin', 'superAdmin'])], CategoryController.update],
+    ['delete', '/:id', [protect, authorize(['admin', 'superAdmin'])], CategoryController.delete],
 
     ['get', '/get-all/no-pagination', [], CategoryController.getAllCategories],
 ]);
@@ -238,7 +238,7 @@ routeGroup('/categories', CategoryController, [
 // 📌 User Routes (Admin Only + Public Access Where Applicable)
 routeGroup('/users', UserController, [
     // Admin-only route to get all users (no pagination)
-    ['get', '/get-all/no-pagination', [protect, authorize(['admin', 'superadmin'])], UserController.getAllUsers],
+    ['get', '/get-all/no-pagination', [protect, authorize(['admin', 'superAdmin', 'superadmin'])], UserController.getAllUsers],
     ['get', '/get-all/doctors/no-pagination', [], UserController.getAllDoctors],
   
     // Public routes
@@ -264,9 +264,9 @@ routeGroup('/users', UserController, [
       
     // Authenticated user routes
     ['put', '/update/:id', [protect], UserController.updateUserInfo],
-    // ['delete', '/delete/by', [protect, authorize(['admin'])], UserController.deleteUser],
+    // ['delete', '/delete/by', [protect, authorize(['admin', 'superAdmin'])], UserController.deleteUser],
     ['get', '/delete/by', [], UserController.deleteUser],
-    ['put', '/:id/status', [protect, authorize(['admin'])], UserController.updateSpecialistApproval]
+    ['put', '/:id/status', [protect, authorize(['admin', 'superAdmin'])], UserController.updateSpecialistApproval]
     
 ]);
 
@@ -322,7 +322,7 @@ routeGroup('/push-notifications', PushNotificationController, [
 
 routeGroup('/video-sessions', VideoSessionController, [
     // Create a session (after payment)
-    ['post', '/', [protect, authorize(['admin', 'consultant', 'specialist'])], VideoSessionController.createSession],
+    ['post', '/', [protect, authorize(['admin', 'superAdmin', 'consultant', 'specialist'])], VideoSessionController.createSession],
   
     ['get', '/:id', [protect], VideoSessionController.getSessionById],
 
@@ -349,7 +349,7 @@ routeGroup('/video-sessions', VideoSessionController, [
     ['post', '/', [protect, authorize(['user'])], VideoSessionController.addFeedback],
   
     // Get feedback by session ID
-    ['get', '/:sessionId', [protect, authorize(['admin'])], VideoSessionController.getFeedbackBySession],
+    ['get', '/:sessionId', [protect, authorize(['admin', 'superAdmin'])], VideoSessionController.getFeedbackBySession],
 
     ['get', '/get/all/paginated', [protect], VideoSessionController.getPaginatedFeedbacks],
 
@@ -357,9 +357,9 @@ routeGroup('/video-sessions', VideoSessionController, [
   ]);
 
 routeGroup('/galleries', GalleryController, [
-  ['post', '/custom/create', [protect, authorize(['admin']), upload.single('photo')], GalleryController.createCustom],
+  ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('photo')], GalleryController.createCustom],
 
-  ['put', '/custom/update/:id', [protect, authorize(['admin']), upload.single('photo')], GalleryController.updateCustom],
+  ['put', '/custom/update/:id', [protect, authorize(['admin', 'superAdmin']), upload.single('photo')], GalleryController.updateCustom],
 
   ['get', '/get-all/no-pagination', [], GalleryController.getAllNoPagination],
 
@@ -367,10 +367,10 @@ routeGroup('/galleries', GalleryController, [
 
 routeGroup('/blogs', BlogController, [
   // Override create
-  ['post', '/custom/create', [protect, authorize(['admin']), upload.single('featuredImage')], BlogController.createCustom],
+  ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('featuredImage')], BlogController.createCustom],
 
   // Override update
-  ['put', '/custom/update/:id', [protect, authorize(['admin']), upload.single('featuredImage')], BlogController.updateCustom],
+  ['put', '/custom/update/:id', [protect, authorize(['admin', 'superAdmin']), upload.single('featuredImage')], BlogController.updateCustom],
 ]);
 
 routeGroup('/chatbot', ChatbotController, [

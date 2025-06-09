@@ -16,6 +16,8 @@ const Specialist = require('../../models/medicalTourism/SpecialistUser');
 const Patient = require('../../models/medicalTourism/UserDefault');
 const Consultant = require('../../models/medicalTourism/ConsultantUser');
 const Admin = require('../../models/medicalTourism/AdminUser');
+const SuperAdmin = require('../../models/medicalTourism/SuperAdminUser');
+
 
 const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
 
@@ -23,7 +25,8 @@ const models = {
   specialist: Specialist,
   patient: Patient,
   consultant: Consultant,
-  admin: Admin
+  admin: Admin,
+  superAdmin: SuperAdmin
 };
 
 class UserController extends GeneralController {
@@ -59,15 +62,13 @@ class UserController extends GeneralController {
       }
       return user;
   }
-  
-  
 
   async register(req, res) {
     try {
       const { email, password, role, captchaToken } = req.body;
   
       console.log("register hit");
-      console.log(req.body);
+      // console.log(req.body);
   
       if (!email || !password || !role || !captchaToken) {
         return res.status(400).json({

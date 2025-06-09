@@ -137,7 +137,7 @@ class VideoSessionController {
       let query = {};
   
       // If the role is 'admin', allow fetching all sessions
-      if (userRole === 'admin') {
+      if (userRole === 'admin' || userRole === 'superAdmin') {
         query = {}; // No filter, fetch all sessions
       }
       // If the role is 'specialist', fetch only sessions where the specialist matches the user's ID
@@ -203,7 +203,7 @@ class VideoSessionController {
   async getPrescriptionsByUser(req, res) {
     try {
       let sessions
-      if(req.user.role === "admin"){
+      if(req.user.role === "admin" || req.user.role === "superAdmin"){
         sessions = await VideoSession.find({
           prescriptions: { $exists: true, $not: { $size: 0 } },
         })
