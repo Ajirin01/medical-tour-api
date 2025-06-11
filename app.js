@@ -110,6 +110,8 @@ app.get("/test", (req, res) => {
   res.json({ message: "This is the get-calls route" });
 });
 
+app.use('/ics', express.static(path.join(__dirname, 'ics')));
+
 // Add better error handling for connection issues
 app.use((err, req, res, next) => {
   if (err.code === "ECONNRESET") {

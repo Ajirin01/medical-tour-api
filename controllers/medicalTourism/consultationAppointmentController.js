@@ -6,9 +6,12 @@ const GeneralController = require('./GeneralController')
 const Availability = require('../../models/medicalTourism/Availability');
 const sendEmail = require("../../utils/medicalTourism/sendEmail");
 
+const { createEvent } = require("ics");
+
 const fs = require("fs");
 const path = require("path");
 const handlebars = require("handlebars");
+const dayjs = require("dayjs");
 
 class ConsultationAppointmentController extends GeneralController {
   constructor() {
@@ -129,14 +132,12 @@ class ConsultationAppointmentController extends GeneralController {
     try {
       const { patient, consultant, date, type, mode, slot } = req.body;
       const availabilityId = slot._id;
-  
-      // Validate consultant
+
       const consultantUser = await UserModel.findById(consultant);
-      if (!consultantUser || consultantUser.role === 'patient') {
+      if (!consultantUser || consultantUser.role === "patient") {
         return res.status(400).json({ message: "Invalid consultant." });
       }
-  
-      // Check if patient already has appointment with same consultant on that day
+
       const existingAppointment = await ConsultationAppointment.findOne({
         patient,
         consultant,
@@ -144,16 +145,16 @@ class ConsultationAppointmentController extends GeneralController {
           $gte: new Date(date).setHours(0, 0, 0, 0),
           $lte: new Date(date).setHours(23, 59, 59, 999),
         },
-        status: { $in: ['pending', 'confirmed'] },
+        status: { $in: ["pending", "confirmed"] },
       });
-  
+
       if (mode === "appointment") {
         const availabilitySlot = await Availability.findById(availabilityId);
-  
+
         if (!availabilitySlot) {
           return res.status(400).json({ message: "Invalid availability slot." });
         }
-  
+
         if (availabilitySlot.isBooked) {
           return res.status(400).json({ message: "This slot has already been booked." });
         }
@@ -164,37 +165,76 @@ class ConsultationAppointmentController extends GeneralController {
             appointment: existingAppointment,
           });
         }
-  
-        if(slot.type !== "recurring"){
-          // Mark as booked
+
+        if (slot.type !== "recurring") {
           availabilitySlot.isBooked = true;
           await availabilitySlot.save();
         }
       }
 
-      let appointmentData = req.body
-      appointmentData = {...appointmentData, slot: availabilityId}
-  
-      // Create the appointment
+      let appointmentData = req.body;
+      appointmentData = { ...appointmentData, slot: availabilityId };
+
       const newAppointment = await ConsultationAppointment.create(appointmentData);
-  
-      // Fetch patient user for email
+
       const patientUser = await UserModel.findById(patient);
-  
-      // Format date and time nicely
-      const dayjs = require('dayjs');
+
       const formattedDate = dayjs(date).format("dddd, MMMM D, YYYY");
       const timeRange = `${slot.startTime} - ${slot.endTime}`;
 
-      const templateSource = fs.readFileSync(
-        path.join(__dirname, "../../templates/email-template.html"),
-        "utf8"
-      );
-  
-      // Email content
-      const template = handlebars.compile(templateSource);
+      // --- Generate ICS file ---
+      const [startHour, startMin] = slot.startTime.split(":").map(Number);
+      const [endHour, endMin] = slot.endTime.split(":").map(Number);
+      const d = dayjs(date);
+      const year = d.year();
+      const month = d.month() + 1; // month is 0-indexed in dayjs
+      const day = d.date();
+
+      const start = [year, month, day, startHour, startMin];
+      const end = [year, month, day, endHour, endMin];
+
+
+      const eventDetails = {
+        start,
+        end,
+        title: `Consultation with ${consultantUser.firstName}`,
+        description: `Your appointment with ${consultantUser.firstName} via SozoDigiCare.`,
+        location: "Online via SozoDigiCare",
+        status: "CONFIRMED",
+        organizer: {
+          name: "SozoDigiCare",
+          email: "no-reply@sozodigicare.com",
+        },
+      };
+
+      let icsLink = null;
+
+      createEvent(eventDetails, (error, value) => {
+        if (!error) {
+          const fileName = `appointment-${newAppointment._id}.ics`;
+          const icsDir = path.join(__dirname, "../../ics");
+
+          // Ensure the `ics` directory exists
+          if (!fs.existsSync(icsDir)) {
+            fs.mkdirSync(icsDir, { recursive: true });
+          }
+
+          const icsPath = path.join(icsDir, fileName);
+          fs.writeFileSync(icsPath, value);
+
+          icsLink = `${process.env.BASE_URL || "https://sozodigicare.com"}/ics/${fileName}`;
+        }
+      });
+
+      // Wait for ICS to be written (basic delay to ensure link exists)
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      const calendarLine = icsLink
+        ? `📆 Click this link: ${icsLink} to Add to Calendar (.ics)`
+        : "";
 
       const emailBody = `
+        ${calendarLine}
         📅 Date: ${formattedDate}
         ⏰ Time: ${timeRange}
         💻 Mode: ${mode}
@@ -202,30 +242,27 @@ class ConsultationAppointmentController extends GeneralController {
         🔗 Please check your dashboard for more details.
       `;
 
-      let consultantHtml
-      if(slot.category === "cert"){
-        // Create consultant email content
-        consultantHtml = template({
-          subject: "New Appointment Booked",
-          recipientName: consultantUser.firstName || "Consultant",
-          bodyIntro: `A new appointment for medical certification has been scheduled with you.`,
-          highlightText: `Patient: ${patientUser.firstName} ${patientUser.lastName || ""}`,
-          bodyOutro: emailBody,
-          year: new Date().getFullYear(),
-        });
-      }else{
-        // Create consultant email content
-        consultantHtml = template({
-          subject: "New Appointment Booked",
-          recipientName: consultantUser.firstName || "Consultant",
-          bodyIntro: `A new appointment has been scheduled with you.`,
-          highlightText: `Patient: ${patientUser.firstName} ${patientUser.lastName || ""}`,
-          bodyOutro: emailBody,
-          year: new Date().getFullYear(),
-        });
-      }
+      const templateSource = fs.readFileSync(
+        path.join(__dirname, "../../templates/email-template.html"),
+        "utf8"
+      );
 
-      // Create patient email content
+      const template = handlebars.compile(templateSource);
+
+      // Consultant Email
+      const consultantHtml = template({
+        subject: "New Appointment Booked",
+        recipientName: consultantUser.firstName || "Consultant",
+        bodyIntro:
+          slot.category === "cert"
+            ? `A new appointment for medical certification has been scheduled with you.`
+            : `A new appointment has been scheduled with you.`,
+        highlightText: `Patient: ${patientUser.firstName} ${patientUser.lastName || ""}`,
+        bodyOutro: emailBody,
+        year: new Date().getFullYear(),
+      });
+
+      // Patient Email
       const patientHtml = template({
         subject: "Appointment Confirmation",
         recipientName: patientUser.firstName || "Patient",
@@ -235,22 +272,11 @@ class ConsultationAppointmentController extends GeneralController {
         year: new Date().getFullYear(),
       });
 
-      // console.log(consultantHtml, patientHtml, consultantUser.email, patientUser.email)
-
       if (mode === "appointment") {
-        // Send emails
-        await sendEmail(
-          consultantUser.email,
-          "New Appointment Booked",
-          consultantHtml,
-        );
-        await sendEmail(
-          patientUser.email,
-          "Appointment Confirmation",
-          patientHtml,
-        );
+        await sendEmail(consultantUser.email, "New Appointment Booked", consultantHtml);
+        await sendEmail(patientUser.email, "Appointment Confirmation", patientHtml);
       }
-  
+
       res.status(201).json({
         message: "Appointment booked successfully",
         appointment: newAppointment,
