@@ -178,101 +178,101 @@ class ConsultationAppointmentController extends GeneralController {
       const newAppointment = await ConsultationAppointment.create(appointmentData);
 
       const patientUser = await UserModel.findById(patient);
-
-      const formattedDate = dayjs(date).format("dddd, MMMM D, YYYY");
-      const timeRange = `${slot.startTime} - ${slot.endTime}`;
-
-      // --- Generate ICS file ---
-      const [startHour, startMin] = slot.startTime.split(":").map(Number);
-      const [endHour, endMin] = slot.endTime.split(":").map(Number);
-      const d = dayjs(date);
-      const year = d.year();
-      const month = d.month() + 1; // month is 0-indexed in dayjs
-      const day = d.date();
-
-      const start = [year, month, day, startHour, startMin];
-      const end = [year, month, day, endHour, endMin];
-
-
-      const eventDetails = {
-        start,
-        end,
-        title: `Consultation with ${consultantUser.firstName}`,
-        description: `Your appointment with ${consultantUser.firstName} via SozoDigiCare.`,
-        location: "Online via SozoDigiCare",
-        status: "CONFIRMED",
-        organizer: {
-          name: "SozoDigiCare",
-          email: "no-reply@sozodigicare.com",
-        },
-      };
-
-      let icsLink = null;
-
-      createEvent(eventDetails, (error, value) => {
-        if (!error) {
-          const fileName = `appointment-${newAppointment._id}.ics`;
-          const icsDir = path.join(__dirname, "../../ics");
-
-          // Ensure the `ics` directory exists
-          if (!fs.existsSync(icsDir)) {
-            fs.mkdirSync(icsDir, { recursive: true });
-          }
-
-          const icsPath = path.join(icsDir, fileName);
-          fs.writeFileSync(icsPath, value);
-
-          icsLink = `${process.env.BASE_URL || "https://sozodigicare.com"}/ics/${fileName}`;
-        }
-      });
-
-      // Wait for ICS to be written (basic delay to ensure link exists)
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      const calendarLine = icsLink
-        ? `📆 Click this link: ${icsLink} to Add to Calendar (.ics)`
-        : "";
-
-      const emailBody = `
-        ${calendarLine}
-        📅 Date: ${formattedDate}
-        ⏰ Time: ${timeRange}
-        💻 Mode: ${mode}
-
-        🔗 Please check your dashboard for more details.
-      `;
-
-      const templateSource = fs.readFileSync(
-        path.join(__dirname, "../../templates/email-template.html"),
-        "utf8"
-      );
-
-      const template = handlebars.compile(templateSource);
-
-      // Consultant Email
-      const consultantHtml = template({
-        subject: "New Appointment Booked",
-        recipientName: consultantUser.firstName || "Consultant",
-        bodyIntro:
-          slot.category === "cert"
-            ? `A new appointment for medical certification has been scheduled with you.`
-            : `A new appointment has been scheduled with you.`,
-        highlightText: `Patient: ${patientUser.firstName} ${patientUser.lastName || ""}`,
-        bodyOutro: emailBody,
-        year: new Date().getFullYear(),
-      });
-
-      // Patient Email
-      const patientHtml = template({
-        subject: "Appointment Confirmation",
-        recipientName: patientUser.firstName || "Patient",
-        bodyIntro: `Your appointment has been successfully booked.`,
-        highlightText: `Consultant: ${consultantUser.firstName} ${consultantUser.lastName || ""}`,
-        bodyOutro: emailBody,
-        year: new Date().getFullYear(),
-      });
-
       if (mode === "appointment") {
+        const formattedDate = dayjs(date).format("dddd, MMMM D, YYYY");
+        const timeRange = `${slot.startTime} - ${slot.endTime}`;
+
+        // --- Generate ICS file ---
+        const [startHour, startMin] = slot.startTime.split(":").map(Number);
+        const [endHour, endMin] = slot.endTime.split(":").map(Number);
+        const d = dayjs(date);
+        const year = d.year();
+        const month = d.month() + 1; // month is 0-indexed in dayjs
+        const day = d.date();
+
+        const start = [year, month, day, startHour, startMin];
+        const end = [year, month, day, endHour, endMin];
+
+
+        const eventDetails = {
+          start,
+          end,
+          title: `Consultation with ${consultantUser.firstName}`,
+          description: `Your appointment with ${consultantUser.firstName} via SozoDigiCare.`,
+          location: "Online via SozoDigiCare",
+          status: "CONFIRMED",
+          organizer: {
+            name: "SozoDigiCare",
+            email: "no-reply@sozodigicare.com",
+          },
+        };
+
+        let icsLink = null;
+
+        createEvent(eventDetails, (error, value) => {
+          if (!error) {
+            const fileName = `appointment-${newAppointment._id}.ics`;
+            const icsDir = path.join(__dirname, "../../ics");
+
+            // Ensure the `ics` directory exists
+            if (!fs.existsSync(icsDir)) {
+              fs.mkdirSync(icsDir, { recursive: true });
+            }
+
+            const icsPath = path.join(icsDir, fileName);
+            fs.writeFileSync(icsPath, value);
+
+            icsLink = `${process.env.BASE_URL || "https://sozodigicare.com"}/ics/${fileName}`;
+          }
+        });
+
+        // Wait for ICS to be written (basic delay to ensure link exists)
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
+        const calendarLine = icsLink
+          ? `📆 Click this link: ${icsLink} to Add to Calendar (.ics)`
+          : "";
+
+        const emailBody = `
+          ${calendarLine}
+          📅 Date: ${formattedDate}
+          ⏰ Time: ${timeRange}
+          💻 Mode: ${mode}
+
+          🔗 Please check your dashboard for more details.
+        `;
+
+        const templateSource = fs.readFileSync(
+          path.join(__dirname, "../../templates/email-template.html"),
+          "utf8"
+        );
+
+        const template = handlebars.compile(templateSource);
+
+        // Consultant Email
+        const consultantHtml = template({
+          subject: "New Appointment Booked",
+          recipientName: consultantUser.firstName || "Consultant",
+          bodyIntro:
+            slot.category === "cert"
+              ? `A new appointment for medical certification has been scheduled with you.`
+              : `A new appointment has been scheduled with you.`,
+          highlightText: `Patient: ${patientUser.firstName} ${patientUser.lastName || ""}`,
+          bodyOutro: emailBody,
+          year: new Date().getFullYear(),
+        });
+
+        // Patient Email
+        const patientHtml = template({
+          subject: "Appointment Confirmation",
+          recipientName: patientUser.firstName || "Patient",
+          bodyIntro: `Your appointment has been successfully booked.`,
+          highlightText: `Consultant: ${consultantUser.firstName} ${consultantUser.lastName || ""}`,
+          bodyOutro: emailBody,
+          year: new Date().getFullYear(),
+        });
+
+      
         await sendEmail(consultantUser.email, "New Appointment Booked", consultantHtml);
         await sendEmail(patientUser.email, "Appointment Confirmation", patientHtml);
       }
