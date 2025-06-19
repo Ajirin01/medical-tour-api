@@ -9,6 +9,7 @@ const ConsultationAppointmentSchema = new mongoose.Schema({
   slot: { type: mongoose.Schema.Types.ObjectId, ref: 'Availability', required: false },
   type: { type: String, enum: ['general', 'medicalTourism', 'future'], required: true },
   reason: { type: String },
+  illness: { type: String },
   paymentStatus: { type: String, enum: ['pending', 'paid', 'refunded'], default: 'pending' }
 }, { timestamps: true });
 

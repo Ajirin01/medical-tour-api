@@ -31,6 +31,7 @@ const { VideoSessionController } = require('../controllers/medicalTourism/videoS
 const { GalleryController } = require('../controllers/medicalTourism/galleryController');
 const { BlogController } = require('../controllers/medicalTourism/blogController');
 const { ChatbotController } = require('../controllers/medicalTourism/ChatbotController');
+const { MedicalCertificateController } = require('../controllers/medicalTourism/MedicalCertificateController');
 
 
 
@@ -376,6 +377,25 @@ routeGroup('/blogs', BlogController, [
 routeGroup('/chatbot', ChatbotController, [
   // Predict disease based on symptoms or question
   ['post', '/predict_disease', [], ChatbotController.predictDisease],
+]);
+
+// Medical Cerificate Routes
+routeGroup('/certificates', MedicalCertificateController, [
+  // Create Certificate with QR generation
+  ['post', '/create', [protect, authorize(['specialist', 'admin'])], MedicalCertificateController.createCertificate],
+
+  // Update certificate details (diagnosis/comment)
+  ['put', '/update/:id', [protect, authorize(['specialist', 'admin'])], MedicalCertificateController.updateCertificate],
+
+  // Get certificate by ID
+  ['get', '/custom/get/:id', [protect, authorize(['specialist', 'admin'])], MedicalCertificateController.getCertificateByID],
+
+  // Get certificate by certID
+  ['get', '/get/by/:certID', [], MedicalCertificateController.getCertificateByCertID],
+
+  // Get all certificates (admin only)
+  ['get', '/get-all/no-pagination', [protect, authorize(['admin'])], MedicalCertificateController.getAllCertificates],
+
 ]);
 
 
