@@ -34,8 +34,6 @@ const { ChatbotController } = require('../controllers/medicalTourism/ChatbotCont
 const { MedicalCertificateController } = require('../controllers/medicalTourism/MedicalCertificateController');
 
 
-
-
 const routeGroup = (prefix, controller, extraRoutes = []) => {
     const commonRoutes = [
       {
@@ -122,16 +120,28 @@ routeGroup('/laboratories', LaboratoryController, [
     ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LaboratoryController.customCreate]
 ]);
 
-// 📌 Laboratory (Lab Admin & Lab Employees Manage Lab Services)
+// 📌 Laboratory Result (Lab Admin & Lab Employees Manage Lab Services)
 routeGroup('/lab-results', LabResultController, [
-    ['post', '/', [protect, authorize(['admin', 'superAdmin', 'labAdmin', 'labEmployee'])], LabResultController.create],
+    ['post', '/', [protect, authorize(['admin', 'specialist', 'user', 'superAdmin', 'labAdmin', 'labEmployee'])], LabResultController.create],
 
     ['get', '/get-all/no-pagination', [], LabResultController.getAllLabResults],
 
     ['put', '/custom/update/:id', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LabResultController.customUpdate],
 
-    ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LabResultController.customCreate]
+    ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LabResultController.customCreate],
+
+    // 🔍 File-based lab referrals (Admin only or delegated roles)
+    ['get', '/referrals', [protect, authorize(['admin', 'superAdmin', 'labAdmin'])], LabResultController.getAllFileBasedReferrals],
+
+    ['post', '/referrals', [protect, authorize(['admin', 'superAdmin', 'labAdmin']), upload.single('file')], LabResultController.createFileBasedReferral],
+
+    ['put', '/referrals/:id', [protect, authorize(['admin', 'superAdmin', 'labAdmin']), upload.single('file')], LabResultController.updateFileBasedReferral],
+
+    ['delete', '/referrals/:id', [protect, authorize(['admin', 'superAdmin', 'labAdmin'])], LabResultController.deleteFileBasedReferral],
+
+    ['post', '/refer/send-to-lab', [protect, authorize(['doctor', 'admin', 'superAdmin', 'specialist'])], LabResultController.sendReferralToLab],
 ]);
+
 routeGroup('/lab-services', LabServiceController, [
     ['post', '/', [protect, authorize(['admin', 'superAdmin','labAdmin'])], LabServiceController.create],
     ['get', '/get-all/no-pagination', [], LabServiceController.getAllLabServices],
@@ -343,6 +353,13 @@ routeGroup('/video-sessions', VideoSessionController, [
     ['get', '/by-specialist/:specialistId/prescriptions', [protect], VideoSessionController.getPrescriptionsBySpecialist],
   
     ['get', '/get/all/paginated', [protect], VideoSessionController.getPaginatedSessions],
+
+    // ✅ Lab Referrals (Embedded)
+  ['get', '/lab-referrals/embedded', [protect], VideoSessionController.getAllEmbeddedLabReferrals],
+  ['get', '/lab-referrals/session/:sessionId', [protect], VideoSessionController.getEmbeddedLabReferralsBySession],
+  ['post', '/lab-referrals/session/:sessionId', [protect, authorize(['admin', 'superAdmin', 'specialist'])], VideoSessionController.addLabReferralToSession],
+  ['get', '/by-user/:userId/lab-referrals', [protect], VideoSessionController.getLabReferralsByUser],
+  ['get', '/by-specialist/:specialistId/lab-referrals', [protect], VideoSessionController.getLabReferralsBySpecialist],
   ]);
   
   routeGroup('/session-feedback', VideoSessionController, [

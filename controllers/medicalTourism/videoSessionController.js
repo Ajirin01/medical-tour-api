@@ -50,31 +50,43 @@ class VideoSessionController {
     try {
       const { id } = req.params;
       const updateFields = req.body;
-  
-      // Validate: only allow updating specific fields
-      const allowedFields = ['startTime', 'endTime', 'durationInMinutes', 'specialistPaymentStatus', 'specialistPaymentDate', 'sessionNotes', 'videoCallUrl', 'prescriptions'];
+
+      // Add labReferrals to allowed fields
+      const allowedFields = [
+        'startTime',
+        'endTime',
+        'durationInMinutes',
+        'specialistPaymentStatus',
+        'specialistPaymentDate',
+        'sessionNotes',
+        'videoCallUrl',
+        'prescriptions',
+        'labReferrals' // 🔥 added here
+      ];
+
       const sanitizedUpdate = {};
-  
+
       for (const key of allowedFields) {
         if (key in updateFields) sanitizedUpdate[key] = updateFields[key];
       }
-  
+
       const session = await VideoSession.findOneAndUpdate(
         { _id: id },
         sanitizedUpdate,
         { new: true }
       );
-  
+
       if (!session) {
         return this.handleError(res, 'Session not found', 404);
       }
-  
+
       res.status(200).json({ success: true, session });
     } catch (error) {
       console.error('Update session error:', error);
       this.handleError(res, 'Failed to update session');
     }
   }
+
 
   async getSessionByAppointment(req, res) {
     try {
@@ -336,6 +348,144 @@ class VideoSessionController {
       res.status(500).json({ message: "Server error" });
     }
   }
+
+  async getAllEmbeddedLabReferrals(req, res) {
+    try {
+      const sessions = await VideoSession.find({ labReferrals: { $exists: true, $not: { $size: 0 } } })
+        .populate('user specialist appointment')
+        .sort({ createdAt: -1 });
+
+      const labReferrals = sessions.flatMap(session =>
+        session.labReferrals.map(referral => ({
+          ...referral.toObject(),
+          sessionId: session._id,
+          createdAt: session.createdAt,
+          user: session.user,
+          specialist: session.specialist,
+          appointment: session.appointment,
+        }))
+      );
+
+      res.status(200).json({ success: true, labReferrals });
+    } catch (error) {
+      console.error("Error fetching embedded lab referrals:", error);
+      this.handleError(res, "Failed to fetch lab referrals");
+    }
+  }
+
+  async getEmbeddedLabReferralsBySession(req, res) {
+    try {
+      const session = await VideoSession.findById(req.params.sessionId)
+        .populate('user specialist appointment');
+
+      if (!session) return this.handleError(res, 'Session not found', 404);
+
+      res.status(200).json({ success: true, labReferrals: session.labReferrals });
+    } catch (error) {
+      console.error('Error fetching lab referrals by session:', error);
+      this.handleError(res, 'Failed to fetch lab referrals');
+    }
+  }
+
+  async addLabReferralToSession(req, res) {
+    try {
+      const { sessionId } = req.params;
+      const referralData = req.body; // expects testName, labName, note (optional)
+
+      const session = await VideoSession.findById(sessionId);
+      if (!session) return this.handleError(res, 'Session not found', 404);
+
+      session.labReferrals.push(referralData);
+      await session.save();
+
+      res.status(200).json({ success: true, labReferrals: session.labReferrals });
+    } catch (error) {
+      console.error('Error adding lab referral:', error);
+      this.handleError(res, 'Failed to add lab referral');
+    }
+  }
+
+
+  // 🧪 Get all lab referrals across sessions
+  async getAllLabReferrals(req, res) {
+    try {
+      const sessions = await VideoSession.find({ labReferrals: { $exists: true, $not: { $size: 0 } } })
+        .populate('user specialist appointment')
+        .sort({ createdAt: -1 });
+
+      const labReferrals = sessions.flatMap(session =>
+        session.labReferrals.map(referral => ({
+          ...referral.toObject(),
+          sessionId: session._id,
+          createdAt: session.createdAt,
+          user: session.user,
+          specialist: session.specialist,
+          appointment: session.appointment,
+        }))
+      );
+
+      res.status(200).json({ success: true, labReferrals });
+    } catch (error) {
+      console.error("Error fetching all lab referrals:", error);
+      this.handleError(res, "Failed to fetch lab referrals");
+    }
+  }
+
+  // 🔍 Get lab referrals by session ID
+  async getLabReferralsBySession(req, res) {
+    try {
+      const session = await VideoSession.findById(req.params.sessionId);
+      if (!session) return this.handleError(res, 'Session not found', 404);
+      res.status(200).json({ success: true, labReferrals: session.labReferrals });
+    } catch (error) {
+      console.error('Error fetching lab referrals by session:', error);
+      this.handleError(res, 'Failed to fetch lab referrals');
+    }
+  }
+
+  // 👤 Get lab referrals by user ID (admin sees all, user sees theirs)
+  async getLabReferralsByUser(req, res) {
+    try {
+      let sessions;
+      if (req.user.role === "admin" || req.user.role === "superAdmin") {
+        sessions = await VideoSession.find({
+          labReferrals: { $exists: true, $not: { $size: 0 } },
+        })
+          .populate('user specialist appointment')
+          .sort({ createdAt: -1 });
+      } else {
+        sessions = await VideoSession.find({
+          user: req.params.userId,
+          labReferrals: { $exists: true, $not: { $size: 0 } },
+        })
+          .populate('user specialist appointment')
+          .sort({ createdAt: -1 });
+      }
+
+      res.status(200).json({ success: true, sessions });
+    } catch (error) {
+      console.error('Error fetching lab referrals by user:', error);
+      this.handleError(res, 'Failed to fetch lab referrals');
+    }
+  }
+
+  // 🧑‍⚕️ Get lab referrals by specialist ID
+  async getLabReferralsBySpecialist(req, res) {
+    try {
+      const sessions = await VideoSession.find({
+        specialist: req.params.specialistId,
+        labReferrals: { $exists: true, $not: { $size: 0 } },
+      })
+        .populate('user specialist appointment')
+        .sort({ createdAt: -1 });
+
+      res.status(200).json({ success: true, sessions });
+    } catch (error) {
+      console.error('Error fetching lab referrals by specialist:', error);
+      this.handleError(res, 'Failed to fetch lab referrals');
+    }
+  }
+
   
 }
 

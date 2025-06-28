@@ -9,15 +9,27 @@ class LaboratoryController extends GeneralController {
     // Custom GET with optional status filter
     async getAllLaboratories(req, res) {
         try {
-            const { status } = req.query;
-            const query = status ? { status } : {};
-            const laboratories = await Laboratory.find(query);
-            res.status(200).json(laboratories);
+            const { status, country, state, city } = req.query;
+
+            const query = {};
+
+            // Handle status
+            if (status) query.status = status;
+
+            // Nested location fields under address
+            if (country) query["address.country"] = new RegExp(`^${country}$`, "i");
+            if (state) query["address.state"] = new RegExp(`^${state}$`, "i");
+            if (city) query["address.city"] = new RegExp(`^${city}$`, "i");
+
+            const laboratories = await Laboratory.find(query).sort({ name: 1 });
+
+            res.status(200).json({ success: true, labs: laboratories });
         } catch (error) {
             console.error("Error fetching laboratories:", error);
-            res.status(500).json({ message: "Failed to fetch laboratories" });
+            res.status(500).json({ success: false, message: "Failed to fetch laboratories" });
         }
     }
+
 
     // 🔽 Custom create with license image
     async customCreate(req, res) {
