@@ -83,17 +83,31 @@ class LabResultController extends GeneralController {
         }
     }
 
-    // 🔽 Get all file-based lab referrals with optional query filtering
     async getAllFileBasedReferrals(req, res) {
         try {
-            const { status, lab, patient } = req.query;
+            const { status, patient } = req.query;
+            let labId = req.query.lab;
+
+            // 🧠 Get user info from middleware or JWT
+            const user = req.user; // Assuming you set this via auth middleware
+
+            // If the user is a labAdmin, override labId with their own lab
+            if (user && user.role === "labAdmin") {
+            const lab = await Laboratory.findOne({ labAdmin: user._id });
+            if (!lab) {
+                return res.status(404).json({ message: "No laboratory found for this admin" });
+            }
+            labId = lab._id;
+            }
+
+            // Build query
             const query = {};
             if (status) query.status = status;
-            if (lab) query.lab = lab;
             if (patient) query.patient = patient;
+            if (labId) query.lab = labId;
 
-            const referrals = await LabReferral.find(query)
-                .populate('patient doctor lab session');
+            const referrals = await LabReferral.find(query).populate("patient doctor lab session");
+
             res.status(200).json(referrals);
         } catch (error) {
             console.error("Error fetching file-based referrals:", error);
@@ -245,9 +259,9 @@ class LabResultController extends GeneralController {
             const compileTemplate = handlebars.compile(templateSource);
 
             const commonDetails = `
-            🧪 Lab Referral ID: ${referral._id}<br/>
-            👤 Patient: ${patientData.firstName} ${patientData.lastName || ""}<br/>
-            💬 Note: ${note || "—"}<br/>
+            🧪 Lab Referral ID: ${referral._id}
+            👤 Patient: ${patientData.firstName} ${patientData.lastName || ""}
+            💬 Note: ${note || "—"}
             📅 Referred: ${new Date(referral.referredAt).toLocaleString()}
             `;
 

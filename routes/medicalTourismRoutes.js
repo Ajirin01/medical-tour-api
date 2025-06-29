@@ -115,9 +115,9 @@ routeGroup('/invoice', InvoiceController, [
 routeGroup('/laboratories', LaboratoryController, [
     ['get', '/get-all/no-pagination', [], LaboratoryController.getAllLaboratories],
 
-    ['put', '/custom/update/:id', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LaboratoryController.customUpdate],
+    ['put', '/custom/update/:id', [protect, authorize(['admin', 'superAdmin']), upload.single('license')], LaboratoryController.customUpdate],
 
-    ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LaboratoryController.customCreate]
+    ['post', '/custom/create', [protect, authorize(['admin', 'labAdmin', 'superAdmin']), upload.single('license')], LaboratoryController.customCreate]
 ]);
 
 // 📌 Laboratory Result (Lab Admin & Lab Employees Manage Lab Services)
@@ -131,11 +131,11 @@ routeGroup('/lab-results', LabResultController, [
     ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LabResultController.customCreate],
 
     // 🔍 File-based lab referrals (Admin only or delegated roles)
-    ['get', '/referrals', [protect, authorize(['admin', 'superAdmin', 'labAdmin'])], LabResultController.getAllFileBasedReferrals],
+    ['get', '/referrals/get-all/no-pagination', [protect, authorize(['admin', 'superAdmin', 'labAdmin'])], LabResultController.getAllFileBasedReferrals],
 
-    ['post', '/referrals', [protect, authorize(['admin', 'superAdmin', 'labAdmin']), upload.single('file')], LabResultController.createFileBasedReferral],
+    ['post', '/referrals', [protect, authorize(['admin', 'superAdmin', 'labAdmin']), upload.single('result')], LabResultController.createFileBasedReferral],
 
-    ['put', '/referrals/:id', [protect, authorize(['admin', 'superAdmin', 'labAdmin']), upload.single('file')], LabResultController.updateFileBasedReferral],
+    ['put', '/referrals/:id', [protect, authorize(['admin', 'superAdmin', 'labAdmin']), upload.single('result')], LabResultController.updateFileBasedReferral],
 
     ['delete', '/referrals/:id', [protect, authorize(['admin', 'superAdmin', 'labAdmin'])], LabResultController.deleteFileBasedReferral],
 
@@ -249,7 +249,7 @@ routeGroup('/categories', CategoryController, [
 // 📌 User Routes (Admin Only + Public Access Where Applicable)
 routeGroup('/users', UserController, [
     // Admin-only route to get all users (no pagination)
-    ['get', '/get-all/no-pagination', [protect, authorize(['admin', 'superAdmin', 'superadmin'])], UserController.getAllUsers],
+    ['get', '/get-all/no-pagination', [protect, authorize(['admin', 'superAdmin', 'labAdmin', 'superadmin'])], UserController.getAllUsers],
     ['get', '/get-all/doctors/no-pagination', [], UserController.getAllDoctors],
   
     // Public routes
@@ -355,11 +355,11 @@ routeGroup('/video-sessions', VideoSessionController, [
     ['get', '/get/all/paginated', [protect], VideoSessionController.getPaginatedSessions],
 
     // ✅ Lab Referrals (Embedded)
-  ['get', '/lab-referrals/embedded', [protect], VideoSessionController.getAllEmbeddedLabReferrals],
-  ['get', '/lab-referrals/session/:sessionId', [protect], VideoSessionController.getEmbeddedLabReferralsBySession],
-  ['post', '/lab-referrals/session/:sessionId', [protect, authorize(['admin', 'superAdmin', 'specialist'])], VideoSessionController.addLabReferralToSession],
-  ['get', '/by-user/:userId/lab-referrals', [protect], VideoSessionController.getLabReferralsByUser],
-  ['get', '/by-specialist/:specialistId/lab-referrals', [protect], VideoSessionController.getLabReferralsBySpecialist],
+    ['get', '/lab-referrals/embedded', [protect], VideoSessionController.getAllEmbeddedLabReferrals],
+    ['get', '/lab-referrals/session/:sessionId', [protect], VideoSessionController.getEmbeddedLabReferralsBySession],
+    ['post', '/lab-referrals/session/:sessionId', [protect, authorize(['admin', 'superAdmin', 'labAdmin', 'specialist'])], VideoSessionController.addLabReferralToSession],
+    ['get', '/by-user/:userId/lab-referrals', [protect], VideoSessionController.getLabReferralsByUser],
+    ['get', '/by-specialist/:specialistId/lab-referrals', [protect], VideoSessionController.getLabReferralsBySpecialist],
   ]);
   
   routeGroup('/session-feedback', VideoSessionController, [

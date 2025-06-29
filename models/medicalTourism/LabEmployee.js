@@ -1,4 +1,5 @@
 const User = require("./User");
+const mongoose = require('mongoose');
 
 const LabEmployee = User.discriminator(
   "labEmployee",

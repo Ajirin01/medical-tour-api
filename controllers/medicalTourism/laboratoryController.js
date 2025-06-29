@@ -36,6 +36,8 @@ class LaboratoryController extends GeneralController {
         try {
             const laboratoryData = { ...req.body };
 
+            console.log(laboratoryData)
+
             if (req.file) {
                 // Handle file upload path
                 laboratoryData.license = `/uploads/${req.file.filename}`;

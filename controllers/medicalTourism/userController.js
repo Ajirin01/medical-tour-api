@@ -17,6 +17,8 @@ const Patient = require('../../models/medicalTourism/UserDefault');
 const Consultant = require('../../models/medicalTourism/ConsultantUser');
 const Admin = require('../../models/medicalTourism/AdminUser');
 const SuperAdmin = require('../../models/medicalTourism/SuperAdminUser');
+const LabAdmin = require('../../models/medicalTourism/LabAdmin');
+
 
 
 const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
@@ -26,7 +28,8 @@ const models = {
   patient: Patient,
   consultant: Consultant,
   admin: Admin,
-  superAdmin: SuperAdmin
+  superAdmin: SuperAdmin,
+  labAdmin: LabAdmin
 };
 
 class UserController extends GeneralController {
