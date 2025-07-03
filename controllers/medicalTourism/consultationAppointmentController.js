@@ -37,55 +37,62 @@ class ConsultationAppointmentController extends GeneralController {
   }
 
   async getPaginatedWithUsers(req, res) {
-      try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
-    
-        const {
-          patient,
-          consultant,
-          status,
-          dateFrom,
-          dateTo
-        } = req.query;
-    
-        const filter = {};
-    
-        if (patient) filter.patient = patient;
-        if (consultant) filter.consultant = consultant;
-        if (status) filter.status = status;
-    
-        if (dateFrom || dateTo) {
-          filter.date = {};
-          if (dateFrom) filter.date.$gte = new Date(dateFrom);
-          if (dateTo) {
-            const endOfDay = new Date(dateTo);
-            endOfDay.setHours(23, 59, 59, 999);
-            filter.date.$lte = endOfDay;
-          }
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+
+      const {
+        patient,
+        consultant,
+        status,
+        dateFrom,
+        dateTo,
+        hasSlot
+      } = req.query;
+
+      const filter = {};
+
+      if (patient) filter.patient = patient;
+      if (consultant) filter.consultant = consultant;
+      if (status) filter.status = status;
+
+      if (dateFrom || dateTo) {
+        filter.date = {};
+        if (dateFrom) filter.date.$gte = new Date(dateFrom);
+        if (dateTo) {
+          const endOfDay = new Date(dateTo);
+          endOfDay.setHours(23, 59, 59, 999);
+          filter.date.$lte = endOfDay;
         }
-    
-        const [appointments, total] = await Promise.all([
-          ConsultationAppointment.find(filter)
-            .populate("patient", "firstName lastName email")
-            .populate("consultant", "firstName lastName email specialty")
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit),
-          ConsultationAppointment.countDocuments(filter),
-        ]);
-    
-        res.status(200).json({
-          data: appointments,
-          currentPage: page,
-          totalPages: Math.ceil(total / limit),
-          total,
-        });
-      } catch (error) {
-        res.status(500).json({ message: error.message });
       }
+
+      // ✅ Only include appointments with a non-null slot
+      if (hasSlot === 'true') {
+        filter.slot = { $ne: null };
+      }
+
+      const [appointments, total] = await Promise.all([
+        ConsultationAppointment.find(filter)
+          .populate("patient", "firstName lastName email")
+          .populate("consultant", "firstName lastName email specialty")
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        ConsultationAppointment.countDocuments(filter),
+      ]);
+
+      res.status(200).json({
+        data: appointments,
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        total,
+      });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
   }
+
 
   async getNoPaginate(req, res) {
     try {
