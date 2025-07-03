@@ -131,13 +131,13 @@ routeGroup('/lab-results', LabResultController, [
     ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LabResultController.customCreate],
 
     // 🔍 File-based lab referrals (Admin only or delegated roles)
-    ['get', '/referrals/get-all/no-pagination', [protect, authorize(['admin', 'superAdmin', 'labAdmin'])], LabResultController.getAllFileBasedReferrals],
+    ['get', '/referrals/get-all/no-pagination', [protect, authorize(['admin', 'superAdmin', 'labAdmin', 'specialist'])], LabResultController.getAllFileBasedReferrals],
 
-    ['post', '/referrals', [protect, authorize(['admin', 'superAdmin', 'labAdmin']), upload.single('result')], LabResultController.createFileBasedReferral],
+    ['post', '/referrals', [protect, authorize(['admin', 'superAdmin', 'labAdmin', 'specialist']), upload.single('result')], LabResultController.createFileBasedReferral],
 
-    ['put', '/referrals/:id', [protect, authorize(['admin', 'superAdmin', 'labAdmin']), upload.single('result')], LabResultController.updateFileBasedReferral],
+    ['put', '/referrals/:id', [protect, authorize(['admin', 'superAdmin', 'labAdmin', 'specialist']), upload.single('result')], LabResultController.updateFileBasedReferral],
 
-    ['delete', '/referrals/:id', [protect, authorize(['admin', 'superAdmin', 'labAdmin'])], LabResultController.deleteFileBasedReferral],
+    ['delete', '/referrals/:id', [protect, authorize(['admin', 'superAdmin', 'labAdmin', 'specialist'])], LabResultController.deleteFileBasedReferral],
 
     ['post', '/refer/send-to-lab', [protect, authorize(['doctor', 'admin', 'superAdmin', 'specialist'])], LabResultController.sendReferralToLab],
 ]);
