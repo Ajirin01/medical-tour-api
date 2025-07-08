@@ -93,11 +93,11 @@ class LabResultController extends GeneralController {
 
             // If the user is a labAdmin, override labId with their own lab
             if (user && user.role === "labAdmin") {
-            const lab = await Laboratory.findOne({ labAdmin: user._id });
-            if (!lab) {
-                return res.status(404).json({ message: "No laboratory found for this admin" });
-            }
-            labId = lab._id;
+                const lab = await Laboratory.findOne({ labAdmin: user._id });
+                if (!lab) {
+                    return res.status(404).json({ message: "No laboratory found for this admin" });
+                }
+                labId = lab._id;
             }
 
             // Build query
@@ -114,6 +114,27 @@ class LabResultController extends GeneralController {
             res.status(500).json({ message: "Failed to fetch referrals" });
         }
     }
+
+    // ✅ Get lab referrals by user ID
+    async getLabReferralsByUser(req, res) {
+    try {
+        const isAdmin = req.user.role === "admin" || req.user.role === "superAdmin";
+        const userFilter = isAdmin ? {} : { user: req.params.userId };
+
+        const sessions = await VideoSession.find({
+        ...userFilter,
+        labReferrals: { $exists: true, $not: { $size: 0 } },
+        })
+        .populate("user specialist appointment")
+        .sort({ createdAt: -1 });
+
+        res.status(200).json({ success: true, sessions });
+    } catch (error) {
+        console.error("Error fetching lab referrals by user:", error);
+        this.handleError(res, "Failed to fetch lab referrals");
+    }
+    }
+
 
     // 🆕 Create new referral with file upload
     async createFileBasedReferral(req, res) {
@@ -201,59 +222,35 @@ class LabResultController extends GeneralController {
 
             const doctor = req.user?._id;
             if (!doctor) return res.status(403).json({ success: false, message: "Unauthorized doctor" });
-            
 
-            let sessionData, labData, patientData, doctorData;
-
-            try {
-                sessionData = await VideoSession.findById(session);
-                if (!sessionData) throw new Error("Session not found");
-            } catch (err) {
-                console.error("Error fetching session:", err);
-                return res.status(404).json({ success: false, message: "Session not found" });
+            const existing = await LabReferral.findOne({ session, patient, lab });
+            if (existing) {
+            return res.status(200).json({ success: true, message: "Referral already exists", referral: existing });
             }
 
-            try {
-                labData = await Laboratory.findById(lab).populate("labAdmin");
-                if (!labData) throw new Error("Lab not found");
-            } catch (err) {
-                console.error("Error fetching lab:", err);
-                return res.status(404).json({ success: false, message: "Lab not found" });
-            }
-
-            try {
-                patientData = await UserModel.findById(patient);
-                if (!patientData) throw new Error("Patient not found");
-            } catch (err) {
-                console.error("Error fetching patient:", err);
-                return res.status(404).json({ success: false, message: "Patient not found" });
-            }
-
-            try {
-                doctorData = await UserModel.findById(doctor);
-                if (!doctorData) throw new Error("Doctor not found");
-            } catch (err) {
-                console.error("Error fetching doctor:", err);
-                return res.status(404).json({ success: false, message: "Doctor not found" });
-            }
+            const [sessionData, labData, patientData, doctorData] = await Promise.all([
+            VideoSession.findById(session),
+            Laboratory.findById(lab).populate("labAdmin"),
+            UserModel.findById(patient),
+            UserModel.findById(doctor),
+            ]);
 
             if (!sessionData || !labData || !patientData || !doctorData) {
-                return res.status(404).json({ success: false, message: "One or more entities not found." });
+            return res.status(404).json({ success: false, message: "One or more entities not found" });
             }
 
             const referralData = {
-                session,
-                patient,
-                doctor,
-                lab,
-                note: note || "",
-                status: "pending",
-                referredAt: new Date(),
+            session,
+            patient,
+            doctor,
+            lab,
+            note: note || "",
+            status: "pending",
+            referredAt: new Date(),
             };
 
             const referral = await LabReferral.create(referralData);
 
-            // 🔽 Email Template Setup
             const templatePath = path.join(__dirname, "../../templates/email-template.html");
             const templateSource = fs.readFileSync(templatePath, "utf8");
             const compileTemplate = handlebars.compile(templateSource);
@@ -265,7 +262,6 @@ class LabResultController extends GeneralController {
             📅 Referred: ${new Date(referral.referredAt).toLocaleString()}
             `;
 
-            // 🔔 Lab Admin Email
             const labHtml = compileTemplate({
             subject: "New Lab Referral",
             recipientName: labData.labAdmin?.firstName || "Lab Admin",
@@ -275,19 +271,19 @@ class LabResultController extends GeneralController {
             year: new Date().getFullYear(),
             });
 
-            // 🔔 Patient Email
             const patientHtml = compileTemplate({
             subject: "Your Lab Referral",
             recipientName: patientData.firstName || "Patient",
-            bodyIntro: `You have been referred to the lab "${labData.name}" by Dr. ${doctorData.firstName}.`,
+            bodyIntro: `You have been referred to the lab \"${labData.name}\" by Dr. ${doctorData.firstName}.`,
             highlightText: `Referred Laboratory: ${labData.name}`,
             bodyOutro: commonDetails,
             year: new Date().getFullYear(),
             });
 
-            // ✉️ Send Emails
-            await sendEmail(labData.labAdmin?.email, "New Lab Referral", labHtml);
-            await sendEmail(patientData.email, "Lab Referral Sent", patientHtml);
+            await Promise.all([
+            sendEmail(labData.labAdmin?.email, "New Lab Referral", labHtml),
+            sendEmail(patientData.email, "Lab Referral Sent", patientHtml),
+            ]);
 
             return res.status(201).json({ success: true, referral });
         } catch (error) {
@@ -295,6 +291,7 @@ class LabResultController extends GeneralController {
             return res.status(500).json({ success: false, error: error.message });
         }
     }
+
 
 
 }

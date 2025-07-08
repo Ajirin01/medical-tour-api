@@ -131,7 +131,10 @@ routeGroup('/lab-results', LabResultController, [
     ['post', '/custom/create', [protect, authorize(['admin', 'superAdmin']), upload.single('resultFile')], LabResultController.customCreate],
 
     // 🔍 File-based lab referrals (Admin only or delegated roles)
-    ['get', '/referrals/get-all/no-pagination', [protect, authorize(['admin', 'superAdmin', 'labAdmin', 'specialist'])], LabResultController.getAllFileBasedReferrals],
+    ['get', '/referrals/get-all/no-pagination', [protect, authorize(['admin', 'superAdmin', 'labAdmin', 'specialist', 'user'])], LabResultController.getAllFileBasedReferrals],
+
+    // Get referrals for a user
+    ['get', '/by-user/:userId/referrals', [protect], VideoSessionController.getLabReferralsByUser],
 
     ['post', '/referrals', [protect, authorize(['admin', 'superAdmin', 'labAdmin', 'specialist']), upload.single('result')], LabResultController.createFileBasedReferral],
 
