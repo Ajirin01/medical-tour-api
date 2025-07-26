@@ -88,6 +88,9 @@ app.use(
       "https://site.sozodigicare.com",
       "http://www.site.sozodigicare.com",
       "https://www.site.sozodigicare.com",
+      "https://ireland.sozodigicare.com",
+      "http://www.ireland.sozodigicare.com",
+      "https://www.ireland.sozodigicare.com",
       
     ];
     const origin = req.headers.origin;
