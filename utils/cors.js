@@ -13,6 +13,10 @@ const corsOptions = {
     "https://www.sozodigicare.com",
     "https://site.sozodigicare.com",
     "https://www.site.sozodigicare.com",
+
+    "http://ireland.sozodigicare.com",
+    "https://ireland.sozodigicare.com",
+    "https://www.ireland.sozodigicare.com",
   ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
