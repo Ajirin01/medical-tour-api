@@ -497,7 +497,7 @@ class UserController extends GeneralController {
       const html = template({
         subject: "Password Reset Request",
         recipientName: email,
-        bodyIntro: "You requested to reset your password for your Zozo DigiCare account.",
+        bodyIntro: "You requested to reset your password for your SOZODIGICARE  account.",
         highlightText: "Click the link below to reset your password:",
         bodyOutro: `<a href="${resetUrl}" style="color:#3498db; text-decoration:underline;">Reset Password</a><br><br>If you didn’t request this, just ignore this email.`,
         year: new Date().getFullYear(),
